@@ -1,0 +1,18 @@
+# Node / frontend
+node_modules/
+dist/
+build/
+
+# Python / autres
+__pycache__/
+*.pyc
+
+# Env
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Docker volumes locaux (si jamais)
+.docker/
