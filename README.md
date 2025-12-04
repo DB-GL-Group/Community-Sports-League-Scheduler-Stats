@@ -1,92 +1,203 @@
-# Community Sports League – Dev Environment
+# 🏆 Community Sports League 
 
-## Infos générales
+## Table of Contents
+- [ℹ️ General Information](#ℹ️-general-information)
+- [📁 Structure](#📁-structure)
+- [📦 Setup](#📦-setup)
+- [🛠 Useful Commands](#🛠-useful-commands)
+- [🔄 Workflow to Update the DB](#🔄-workflow-to-update-the-db)
+- [🔗 Database Access](#🔗-database-access)
+- [✍️ Modify the Database](#✍️-modify-the-database)
+- [🔥 Managing Flyway Version Conflicts](#🔥-managing-flyway-version-conflicts)
+- [💾 Reset Local DB (dev ONLY)](#💾-reset-local-db-dev-only)
+- [🧪 Test Migrations](#🧪-test-migrations)
+
+## ℹ️ General Information
 ### Description
-Community Sports League est un projet étudiant au sein de la HESSO Valais-Wallis. Les objectifs sont les suivants :
-- Gestion de base de donnée
+Community Sports League is a student project at HESSO Valais-Wallis. The objectives are as follows:
+- Database management
 - ORM 
-- Application avec portails (admin, fan, manager, referee, public)
+- Application with portals (admin, fan, manager, referee, public)
 
-### Prérequis
+### Prerequisites
 
 - Docker + Docker Compose
 - Git
 
-### Images utilisées dans Docker
+### Docker Images Used
 - Postgres:18
 - Flyway:11
 
-### Outils extenes 
-- Visualisation : [dbdiagram.io](https://dbdiagram.io/home)
+### External Tools 
+- Visualization: [dbdiagram.io](https://dbdiagram.io/home)
 
-## Setup
+## 📁 Structure
+```bash
+📁 COMMUNITY-SPORTS-LEAGUE-SCHEDULER-STATS
+├── 📝 CONTRIBUTING.md
+├── 📄 LICENSE
+├── Ⓜ️ Makefile
+├── 📝 PSQL_CheatSheet.md
+├── 📝 README.md
+├── 📁 app
+│   ├── 📁 backend
+│   └── 📁 frontend
+├── 📁 db
+│   └── 📁 migrations
+│       └── 📚 V1__init.sql
+├── 🐳 docker-compose.yml
+└── 📁 documents
+    ├── 📝 DB_leagues_diagram.pdf
+    └── 📝 DB_leagues_diagram_new.pdf
+```
 
-### Cloner le dépôt 
+## 📦 Setup
+
+**1) Clone the repository**
 ```bash
 git clone https://github.com/DB-GL-Group/Community-Sports-League-Scheduler-Stats.git
 cd Community-Sports-League-Scheduler-Stats
 ```
 
-### Variables d'environnement (Obligatoire)
+**2) Environment variables (Required)**
 ```bash
-cp .env.example .env # Modifier les variables si besoin
+cp .env.example .env # Modify variables if needed
 ```
 
-## Commandes
+## 🛠 Useful Commands
 
-```bash
-# Starts the db
+| Action | Command |
+|--------|----------|
+| Start Postgres | `make db-start` |
+| Apply migrations | `make db-migrate` |
+| Check status | `make db-status` |
+| Stop the DB | `make db-stop` |
+| Delete data | `make remove-all`|
+| Reset (⚠️ deletes data) | `make db-reset` |
+
+
+## 🔄 Workflow to Update the DB
+
+1️⃣ Pull updated code:
+
+```
+git pull --rebase
+```
+
+2️⃣ Start Postgres (if needed):
+
+```
 make db-start
+```
 
-# Stops the db
-make db-stop
+3️⃣ Apply existing migrations (if necessary):
 
-# Checks migrations sync
-make db-status
-
-# Applies migrations
+```
 make db-migrate
+make db-status
+```
 
-# Removes the container and its volumes
-make db-remove-all
+> 📌 Must display: `Database schema is up to date.` 
 
-# Rebuilds everything from scratch
+> 📌 IMPORTANT: Any evolution goes through **a new versioned migration**.
+
+## 🔗 Database Access
+The PostgreSQL database is accessible on the port defined in the `.env` file (default `5432`). 
+
+A PostgreSQL client (such as `psql`, DBeaver, or Beekeeper studio) is required to connect with the credentials defined in the `.env` file. 
+
+### Examples 
+1) **`psql`**
+
+    ```bash
+    docker exec -it sports-league-db psql -U <user> -d sports_league 
+    ```
+
+2) **`Beekeeper Studio`**
+    - Host: `localhost`
+    - Port: `5432` (or the one defined in `.env`)
+    - User: `<user>` (defined in `.env`)
+    - Password: `<password>` (defined in `.env`)
+    - Database: `sports_league` (defined in `.env`)
+    
+## ✍️ Modify the Database
+Any modification to the structure must be added in a SQL file in the `db/migrations/` folder. \
+Files follow the following naming convention: 
+
+1) **Add a migration**
+    ```
+    "V<version>__<description>.sql"
+    ```
+
+2) **"Delete" a migration**
+    ```
+    db/migrations/U<version>__<description>.sql
+    ```
+
+> 📌 At container startup, all SQL scripts in this folder will be executed automatically to initialize the database. 
+
+> 📌 From Beekeeper Studio, these are the queries executed.
+
+## 🔥 Managing Flyway Version Conflicts
+
+**Conflicting case:**  
+Two migration files with the same version `V012__xxx.sql` and `V012__yyy.sql`.
+
+**Rules:**\
+➡️ The first push wins.  
+➡️ The second must renumber.
+
+**Solution:**
+1. Rebase:
+
+```
+git pull --rebase
+```
+
+2. Find the latest number:
+
+```
+ls db/migrations
+```
+
+3. Rename your migration:
+
+```
+mv db/migrations/V012__mine.sql db/migrations/V013__mine.sql
+```
+
+4. Commit + push
+
+<br>
+
+> 🎯 No content modification required 
+
+
+## 💾 Reset Local DB (dev ONLY)
+
+To start fresh (🛑 deletes all your local data):
+
+```
 make db-reset
 ```
-## Workflow
-```bash
-make db-start
-make db-status
-make db-migrate 
-# ...
-make db-stop
-```
+
+This:
+
+- deletes the Postgres volume
+- recreates the empty DB
+- reapplies **all** migrations in order
 
 
-## Accès à la base de données
-La base de données PostgreSQL sera accessible sur le port défini dans le fichier `.env` (par défaut `5432`). \
-Utilise un client PostgreSQL (comme `psql`, DBeaver, ou Beekeeper studio) pour te connecter avec les informations d'identification définies dans le fichier `.env`. 
+## 🧪 Test Migrations
 
-### Exemple avec `psql` :
+Best practices:
 
-```bash
-docker exec -it sports-league-db psql -U <user> -d sports_league 
-```
+- Test the migration on a new DB:
+  ```
+  make db-reset
+  ```
+- Verify there is **nothing pending**:
+  ```
+  make db-status
+  ```
 
-### Exemple avec `Beekeeper Studio` :
-- Host: `localhost`
-- Port: `5432` (ou celui défini dans `.env`)
-- User: `<user>` (défini dans `.env`)
-- Password: `<password>` (défini dans `.env`)
-- Database: `sports_league` (défini dans `.env`)
-
-## Modifier la base de données
-Toute modification de la structure doit être ajoutée dans un fichier SQL dans le dossier `db/migrations/`. \
-Les fichiers suivent la convention de nom suivante : 
-```
-Versioned  : "V<version>__<desciption>.sql"
-Undo       : "U<version>__<description>.sql"
-Repeatable : "R<version>__<description>.sql"
-```
-Au démarrage du conteneur, tous les scripts SQL dans ce dossier seront exécutés automatiquement pour initialiser la base de données. \
-Depuis Beekeeper Studio, il s'agit des requêtes exécutées.
