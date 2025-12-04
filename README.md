@@ -1,9 +1,23 @@
 # Community Sports League – Dev Environment
 
-## Prérequis
+## Infos générales
+### Description
+Community Sports League est un projet étudiant au sein de la HESSO Valais-Wallis. Les objectifs sont les suivants :
+- Gestion de base de donnée
+- ORM 
+- Application avec portails (admin, fan, manager, referee, public)
+
+### Prérequis
 
 - Docker + Docker Compose
 - Git
+
+### Images utilisées dans Docker
+- Postgres:18
+- Flyway:11
+
+### Outils extenes 
+- Visualisation : [dbdiagram.io](https://dbdiagram.io/home)
 
 ## Setup
 
@@ -13,10 +27,39 @@ git clone https://github.com/DB-GL-Group/Community-Sports-League-Scheduler-Stats
 cd Community-Sports-League-Scheduler-Stats
 ```
 
-### Lancer la base de données PostgreSQL
+### Variables d'environnement (Obligatoire)
 ```bash
 cp .env.example .env # Modifier les variables si besoin
-docker compose up -d --build
+```
+
+## Commandes
+
+```bash
+# Starts the db
+make db-start
+
+# Stops the db
+make db-stop
+
+# Checks migrations sync
+make db-status
+
+# Applies migrations
+make db-migrate
+
+# Removes the container and its volumes
+make db-remove-all
+
+# Rebuilds everything from scratch
+make db-reset
+```
+## Workflow
+```bash
+make db-start
+make db-status
+make db-migrate 
+# ...
+make db-stop
 ```
 
 
@@ -38,6 +81,12 @@ docker exec -it sports-league-db psql -U <user> -d sports_league
 - Database: `sports_league` (défini dans `.env`)
 
 ## Modifier la base de données
-Toute modification de la structure doit être ajoutée dans un fichier SQL dans le dossier `db/init/`. \
+Toute modification de la structure doit être ajoutée dans un fichier SQL dans le dossier `db/migrations/`. \
+Les fichiers suivent la convention de nom suivante : 
+```
+Versioned  : "V<version>__<desciption>.sql"
+Undo       : "U<version>__<description>.sql"
+Repeatable : "R<version>__<description>.sql"
+```
 Au démarrage du conteneur, tous les scripts SQL dans ce dossier seront exécutés automatiquement pour initialiser la base de données. \
-Depuis Beekeeper Studio, il s'agit des queries éxécutées.
+Depuis Beekeeper Studio, il s'agit des requêtes exécutées.

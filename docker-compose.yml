@@ -1,6 +1,6 @@
 services:
   db:
-    build: ./db
+    image: postgres:18
     container_name: sports-league-db
     restart: unless-stopped
     ports:
@@ -11,7 +11,24 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - db_data:/var/lib/postgresql
-      - ./db/init:/docker-entrypoint-initdb.d
+
+  flyway:
+    image: flyway/flyway:11
+    container_name: sports-league-flyway
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      FLYWAY_URL: "jdbc:postgresql://db:5432/${POSTGRES_DB}"
+      FLYWAY_USER: "${POSTGRES_USER}"
+      FLYWAY_PASSWORD: "${POSTGRES_PASSWORD}"
+      FLYWAY_CONNECT_RETRIES: "60"
+      FLYWAY_BASELINE_ON_MIGRATE: "true"
+    volumes:
+      - ./db/migrations:/flyway/sql
+    command: -locations=filesystem:/flyway/sql migrate
+
 
 volumes:
   db_data:
