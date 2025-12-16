@@ -1,5 +1,6 @@
-.PHONY: db-start db-stop db-reset db-migrate db-status
+.PHONY: db-start db-stop db-reset db-migrate db-status db-remove-all flutter-setup 
 
+# Database management
 db-start:
 	docker compose up -d db
 
@@ -28,3 +29,8 @@ db-status:
 		echo "✅ Database schema is up to date."; \
 		rm .flyway_info.tmp; \
 	fi
+
+
+# Flutter setup
+flutter-setup:
+	powershell -NoProfile -ExecutionPolicy Bypass -File scripts/flutter-setup.ps1
