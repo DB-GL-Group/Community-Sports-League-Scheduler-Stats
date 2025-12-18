@@ -1,4 +1,4 @@
-.PHONY: db-start db-stop db-reset db-migrate db-status db-remove-all flutter-setup 
+.PHONY: db-start db-stop db-reset db-migrate db-status db-remove-all flutter-setup
 
 # Database management
 db-start:
@@ -19,17 +19,17 @@ db-reset:
 	docker compose run --rm flyway
 
 db-status:
-	@echo "🔎 Checking Flyway migration status..."
-	@docker compose run --rm flyway info > .flyway_info.tmp
-	@if grep -q "Pending" .flyway_info.tmp; then \
-		echo "❌ Pending migrations detected. Run: make db-migrate"; \
-		rm .flyway_info.tmp; \
-		exit 1; \
-	else \
-		echo "✅ Database schema is up to date."; \
-		rm .flyway_info.tmp; \
-	fi
+	@powershell -NoLogo -NoProfile -Command \
+	"Write-Host 'Checking Flyway migration status...';" \
+	"docker compose run --rm flyway info | Tee-Object -FilePath .flyway_info.tmp | Out-Null;" \
+	"if (Select-String -Path .flyway_info.tmp -Pattern 'Pending') { Write-Host 'Pending migrations detected. Run: make db-migrate'; Remove-Item .flyway_info.tmp; exit 1 } else { Write-Host 'Database schema is up to date.'; Remove-Item .flyway_info.tmp }"
 
+# Backend management
+backend-start:
+	docker compose up -d --build backend
+
+test-db_conn:
+	curl http://localhost:8000/health
 
 # Flutter setup
 flutter-setup:
