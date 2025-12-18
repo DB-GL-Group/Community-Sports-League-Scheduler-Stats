@@ -5,7 +5,12 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-RUN pip install --no-cache-dir fastapi "uvicorn[standard]" "psycopg[binary]" "psycopg_pool[binary]"
+RUN pip install --no-cache-dir fastapi  "uvicorn[standard]" \
+                                        "psycopg[binary]" \
+                                        "psycopg_pool[binary]" \
+                                        "pydantic[email]" \
+                                        "passlib[argon2]" \
+                                        "PyJWT"
 
 COPY . /app
 

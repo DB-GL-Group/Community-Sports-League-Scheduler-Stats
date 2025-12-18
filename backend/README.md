@@ -1,49 +1,46 @@
 # Backend README
 
-## Apercu
-Backend FastAPI (Python 3.12) avec Postgres et Flyway via Docker Compose.
-
-## Prerequis
-- Docker + Docker Compose
-- PowerShell (pour utiliser le Makefile tel quel)
-- Fichier `.env` a partir de `.env.example` (variables POSTGRES_*)
-
-## Variables d'environnement
-Copier l'exemple puis ajuster si besoin :
-```bash
-cp .env.example .env
-```
-Champs principaux :
-- `POSTGRES_DB`
-- `POSTGRES_USER`
-- `POSTGRES_PASSWORD`
-- `POSTGRES_PORT` (port expose sur la machine)
-
-## Commandes Make (base de donnee)
-- `make db-start` : demarre uniquement Postgres.
-- `make db-migrate` : lance Flyway sur la DB.
-- `make db-status` : verifie les migrations (echoue si pending).
-- `make db-reset` : drop volume, recree Postgres, rejoue les migrations.
-- `make db-stop` : arrete les conteneurs.
-- `make db-remove-all` : stop + supprime volumes/images orphelines.
-
-## Commandes Make (backend)
-- `make backend-start` : build + demarre le service backend.
-- `make test-db_conn` : ping de l'endpoint health (http://localhost:8000/health).
-
-## Lancement manuel via Docker Compose
-```bash
-docker compose up --build db backend
-# ou tout (db, flyway, backend)
-docker compose up --build
+## Setup
+1) **Modifier les variables dans .env** 
+``` bash
+# JWT config
+JWT_SECRET=aprettysecuresecretkeythatyoushouldchange
+JWT_ALGORITHM=HS256
+JWT_EXPIRES_MINUTES=60
 ```
 
-## Healthcheck
-Endpoint : `GET /health` (verifie la DB via le pool async).
-```bash
-curl http://localhost:8000/health
+2) **Générer une clé secrète JWT sécurisée** (optionnel mais recommandé):
+- PowerShell: `[Convert]::ToBase64String((1..64|%{Get-Random -Max 256}|%{[byte]$_}))`)
+
+3) **Démarrer le backend**: 
+``` bash 
+make backend-start
 ```
 
-## Notes
-- Le backend utilise un pool async psycopg; il est ouvert/ferme dans le lifespan FastAPI.
-- Si vous changez `POSTGRES_DB`, recreez la base (ex: `make db-reset`) ou adaptez vos connexions clients (Beekeeper, psql, etc.).
+4) **Test**:
+``` bash
+make backend-db-conn # Vérifie que le backend répond
+```
+
+## Exemples de requêtes (frontend ou curl)
+  - **Health**: `curl http://localhost:8000/health`
+  - **Signup**: `curl -X POST http://localhost:8000/auth/signup -H "Content-Type: application/json" -d '{"email":"user@example.com","password":"test123","roles":["FAN"]}'`
+  - **Login**: `curl -X POST http://localhost:8000/auth/login -H "Content-Type: application/json" -d '{"email":"user@example.com","password":"test123"}'`
+  - **Profil protégé**: `curl http://localhost:8000/auth/me -H "Authorization: Bearer <token>"`
+
+
+## Backend-DB
+- Flux auth (orchestration) :
+  - Entrée API : `routers/auth.py` définit `/auth/signup`, `/auth/login`, `/auth/me`.
+  - Logique métier : `services/auth.py` (hash argon2, création/validation JWT, contrôles d’état utilisateur).
+  - Accès SQL : `repositories/users.py` (lecture hash/roles, insertion user, agrégation des rôles) via pool async `shared/db.py`.
+  - Connexion : pool `AsyncConnectionPool` ouvert/fermé dans le lifespan FastAPI (`main.py`).
+  - Schéma : tables `users`, `roles`, `user_roles` définies dans `db/migrations/V1__init.sql` (rôles init FAN, MANAGER, REFEREE, ADMIN).
+
+
+## Backend-Frontend
+- Auth/API disponibles:
+  - `POST /auth/signup` : crée un utilisateur (hash argon2, associe rôles existants).
+  - `POST /auth/login` : retourne `access_token` (Bearer JWT) + info user.
+  - `GET /auth/me` : nécessite `Authorization: Bearer <token>`, retourne l’utilisateur courant.
+- Intégration front: envoyer le token JWT dans l’en-tête `Authorization: Bearer <token>` sur chaque requête protégée; le backend vérifie le token et les rôles avant d’exécuter la logique.
