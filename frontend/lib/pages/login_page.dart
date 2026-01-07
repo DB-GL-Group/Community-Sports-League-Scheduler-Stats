@@ -1,5 +1,4 @@
-import 'package:community_sports_league_scheduler/authprovider.dart';
-import 'package:community_sports_league_scheduler/object_classes.dart';
+import 'package:community_sports_league_scheduler/router.dart' as api_router;
 import 'package:community_sports_league_scheduler/widgets/template.dart';
 
 import 'package:flutter/material.dart';
@@ -18,15 +17,8 @@ class SignInPage extends StatelessWidget {
           children: [
             const Text('Sign In Page'),
             ElevatedButton(
-              onPressed: () {
-                final user = User.create(
-                  'Gabriel',
-                  'Schönmann',
-                  'schonmann.gabriel@gmail.com',
-                  ['manager', 'referee']
-                );
-                // when login succeeds, we update the auth user
-                context.read<AuthProvider>().signIn(user);
+              onPressed: () async {
+                await context.read<api_router.Router>().fetchData('login');
                 context.go('/');
               },
               child: const Text('Sign In'))

@@ -1,11 +1,12 @@
 import 'package:community_sports_league_scheduler/authprovider.dart';
+import 'package:community_sports_league_scheduler/router.dart' as api_router;
 import 'package:community_sports_league_scheduler/pages/assignments_page.dart';
 
 import 'package:community_sports_league_scheduler/pages/matches_page.dart';
 import 'package:community_sports_league_scheduler/pages/rankings_page.dart';
 import 'package:community_sports_league_scheduler/pages/requests_page.dart';
 import 'package:community_sports_league_scheduler/pages/rosters_page.dart';
-import 'package:community_sports_league_scheduler/pages/signin_page.dart';
+import 'package:community_sports_league_scheduler/pages/login_page.dart';
 import 'package:community_sports_league_scheduler/pages/stats_page.dart';
 
 import 'package:flutter/material.dart';
@@ -13,10 +14,17 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
 void main() => runApp(
-  ChangeNotifierProvider(
-    create: (_) => AuthProvider(),
-    child: SportsLeagueScheduler(),
-  )
+  MultiProvider(
+    providers: [
+      Provider<api_router.Router>(
+        create: (_) => api_router.Router(),
+      ),
+      ChangeNotifierProvider(
+        create: (_) => AuthProvider(),
+      ),
+    ],
+    child: const SportsLeagueScheduler(),
+  ),
 );
 
 // La class SportsLeagueScheduler est la classe principale du UI.
@@ -43,7 +51,7 @@ class SportsLeagueScheduler extends StatelessWidget {
             builder: (_, __) => const StatsPage(),
           ),
           GoRoute(
-            path: '/signin',
+            path: '/login',
             builder: (_, __) => const SignInPage(),
             redirect: (context, state) {
               final auth = context.read<AuthProvider>();
