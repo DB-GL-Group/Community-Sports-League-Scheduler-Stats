@@ -1,0 +1,116 @@
+import 'package:community_sports_league_scheduler/authprovider.dart';
+
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+class NavBar extends StatelessWidget {
+  const NavBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
+    String userName = 'Anonymous';
+    String email = '';
+
+    if (auth.isLoggedIn) {
+      userName = '${auth.user.firstname} ${auth.user.lastname}';
+      email = auth.user.email;
+    }
+
+    List<Widget> navbarElements = [
+      UserAccountsDrawerHeader(
+        accountName: Text(userName),
+        accountEmail: Text(email),
+        decoration: BoxDecoration(
+          color: Color.fromARGB(255, 50, 50, 50)
+        ),
+      ),
+      ListTile(
+        leading: Icon(Icons.sports_soccer),
+        title: Text('Matches'),
+        onTap: () => context.go('/'),
+      ),
+      ListTile(
+        leading: Icon(Icons.view_list_rounded),
+        title: Text('Rankings'),
+        onTap: () => context.go('/rankings'),
+      ),
+      ListTile(
+        leading: Icon(Icons.analytics_outlined),
+        title: Text('Stats'),
+        onTap: () => context.go('/stats'),
+      )
+    ];
+
+    // Manager
+    if (auth.user.roles.contains('manager')) {
+      navbarElements.addAll([
+        Divider(),
+        ListTile(
+          title: Text('Manager', style: TextStyle(fontWeight: FontWeight.bold)),
+          contentPadding: EdgeInsets.only(left: 8),
+        ),
+        ListTile(
+          leading: Icon(Icons.people),
+          title: Text('Rosters'),
+          onTap: () => context.go('/rosters'),
+        ),
+        ListTile(
+          leading: Icon(Icons.send_outlined),
+          title: Text('Requests'),
+          onTap: () => context.go('/requests'),
+        )
+      ]);
+    }
+
+    // Referee
+    if (auth.user.roles.contains('referee')) {
+      navbarElements.addAll([
+        Divider(),
+        ListTile(
+          title: Text('Referee', style: TextStyle(fontWeight: FontWeight.bold)),
+          contentPadding: EdgeInsets.only(left: 8),
+        ),
+        ListTile(
+          leading: Icon(Icons.notifications),
+          title: Text('Assignments'),
+          trailing: Text('2'),
+          onTap: () => context.go('/assignments'),
+        )
+      ]);
+    }
+
+    // Sign in / Sign out
+    if (auth.isLoggedIn) {
+      navbarElements.addAll([
+        Divider(),
+        ListTile(
+          leading: Icon(Icons.logout),
+          title: Text('Sign out'),
+          onTap: () {
+            auth.signOut();
+            context.go('/');
+          },
+        )
+      ]);
+    } else {
+      navbarElements.addAll([
+        Divider(),
+        ListTile(
+          leading: Icon(Icons.login),
+          title: Text('Sign in'),
+          onTap: () => context.go('/signin'),
+        )
+      ]);
+    }
+
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: navbarElements
+      ),
+    );
+  }
+}
