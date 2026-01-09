@@ -1,7 +1,7 @@
 import 'package:community_sports_league_scheduler/authprovider.dart';
-import 'package:community_sports_league_scheduler/router.dart' as api_router;
-import 'package:community_sports_league_scheduler/pages/assignments_page.dart';
+import 'package:community_sports_league_scheduler/router.dart';
 
+import 'package:community_sports_league_scheduler/pages/assignments_page.dart';
 import 'package:community_sports_league_scheduler/pages/matches_page.dart';
 import 'package:community_sports_league_scheduler/pages/rankings_page.dart';
 import 'package:community_sports_league_scheduler/pages/requests_page.dart';
@@ -16,11 +16,15 @@ import 'package:go_router/go_router.dart';
 void main() => runApp(
   MultiProvider(
     providers: [
-      Provider<api_router.Router>(
-        create: (_) => api_router.Router(),
+      Provider<ApiRouter>(
+        create: (_) => ApiRouter(),
       ),
       ChangeNotifierProvider(
-        create: (_) => AuthProvider(),
+        create: (context) {
+          final auth = AuthProvider();
+          auth.loadUser(context.read<ApiRouter>());
+          return auth;
+        },
       ),
     ],
     child: const SportsLeagueScheduler(),
@@ -52,7 +56,7 @@ class SportsLeagueScheduler extends StatelessWidget {
           ),
           GoRoute(
             path: '/login',
-            builder: (_, __) => const SignInPage(),
+            builder: (_, __) => const LogInPage(),
             redirect: (context, state) {
               final auth = context.read<AuthProvider>();
               return auth.isLoggedIn ? '/' : null;
@@ -63,7 +67,7 @@ class SportsLeagueScheduler extends StatelessWidget {
             builder: (_, __) => const RostersPage(),
             redirect: (context, state) {
               final auth = context.read<AuthProvider>();
-              return !auth.hasRole('manager') ? '/' : null;
+              return !auth.hasRole('MANAGER') ? '/' : null;
             }
           ),
           GoRoute(
@@ -71,7 +75,7 @@ class SportsLeagueScheduler extends StatelessWidget {
             builder: (_, __) => const RequestsPage(),
             redirect: (context, state) {
               final auth = context.read<AuthProvider>();
-              return !auth.hasRole('manager') ? '/' : null;
+              return !auth.hasRole('MANAGER') ? '/' : null;
             }
           ),
           GoRoute(
@@ -79,7 +83,7 @@ class SportsLeagueScheduler extends StatelessWidget {
             builder: (_, __) => const AssignmentsPage(),
             redirect: (context, state) {
               final auth = context.read<AuthProvider>();
-              return !auth.hasRole('referee') ? '/' : null;
+              return !auth.hasRole('REFEREE') ? '/' : null;
             }
           ),
         ],

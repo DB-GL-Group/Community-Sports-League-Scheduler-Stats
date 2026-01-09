@@ -2,13 +2,22 @@ import 'package:http/http.dart' as http;
 import 'dart:convert'; // Pour jsonDecode
 
 
-class Router {
-  Router({this.baseUrl = "http://localhost:8000"});
+class ApiRouter {
+  ApiRouter({this.baseUrl = "http://localhost:8000"});
 
   final String baseUrl;
 
-  Future<dynamic> fetchData(String endpoint) async {
-    final response = await http.get(Uri.parse('$baseUrl/$endpoint'));
+  Future<dynamic> fetchData(String endpoint, {String method = 'GET', Map<String, String> body = const {}}) async {
+    final response = switch (method) {
+      'GET' => await http.get(Uri.parse('$baseUrl/$endpoint')),
+      'POST' => await http.post(Uri.parse('$baseUrl/$endpoint'),
+        headers: {"Content-Type": "application/json"},
+        body: json.encode(body)
+      ),
+      String() => throw UnimplementedError(),
+    };
+    print("statusCode: ${response.statusCode}");
+    print("body: ${response.body}");
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     }

@@ -11,18 +11,10 @@ class NavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
 
-    String userName = 'Anonymous';
-    String email = '';
-
-    if (auth.isLoggedIn) {
-      userName = '${auth.user.firstname} ${auth.user.lastname}';
-      email = auth.user.email;
-    }
-
     List<Widget> navbarElements = [
       UserAccountsDrawerHeader(
-        accountName: Text(userName),
-        accountEmail: Text(email),
+        accountName: Text(auth.isLoggedIn ? 'Unknown' : 'Anonymous'),
+        accountEmail: Text(auth.isLoggedIn ? auth.user!.email : ''),
         decoration: BoxDecoration(
           color: Color.fromARGB(255, 50, 50, 50)
         ),
@@ -45,7 +37,7 @@ class NavBar extends StatelessWidget {
     ];
 
     // Manager
-    if (auth.user.roles.contains('manager')) {
+    if (auth.hasRole('MANAGER')) {
       navbarElements.addAll([
         Divider(),
         ListTile(
@@ -66,7 +58,7 @@ class NavBar extends StatelessWidget {
     }
 
     // Referee
-    if (auth.user.roles.contains('referee')) {
+    if (auth.hasRole('REFEREE')) {
       navbarElements.addAll([
         Divider(),
         ListTile(
@@ -83,7 +75,16 @@ class NavBar extends StatelessWidget {
     }
 
     // Sign in / Sign out
-    if (auth.isLoggedIn) {
+    if (!auth.isLoggedIn) {
+      navbarElements.addAll([
+        Divider(),
+        ListTile(
+          leading: Icon(Icons.login),
+          title: Text('Log in'),
+          onTap: () => context.go('/login'),
+        )
+      ]);
+    } else {
       navbarElements.addAll([
         Divider(),
         ListTile(
@@ -93,15 +94,6 @@ class NavBar extends StatelessWidget {
             auth.signOut();
             context.go('/');
           },
-        )
-      ]);
-    } else {
-      navbarElements.addAll([
-        Divider(),
-        ListTile(
-          leading: Icon(Icons.login),
-          title: Text('Sign in'),
-          onTap: () => context.go('/signin'),
         )
       ]);
     }
