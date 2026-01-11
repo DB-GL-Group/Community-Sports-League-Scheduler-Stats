@@ -26,12 +26,17 @@ class _MatchesPageState extends State<MatchesPage> {
   }
 
   Future<List<om.Match>> _loadMatches(ApiRouter apiRouter) async {
-    try {
-      final data = await apiRouter.fetchData("matches/previews");
-      print(data);  //there's no data yet
-    } catch (e) {
-      print(e.toString());
-    }
+    // List<om.Match> matches = [];
+    // try {
+    //   final data = await apiRouter.fetchData("matches/previews");
+    //   for(Map<String, dynamic> matchJson in data['body']) {
+    //     matches.add(om.Match.fromJson(matchJson));
+    //   }
+    // } catch (e) {
+    //   print(e.toString());
+    // } finally {
+    //   return matches;
+    // }
     return [
       om.Match(
         divisionName: 'First Division',

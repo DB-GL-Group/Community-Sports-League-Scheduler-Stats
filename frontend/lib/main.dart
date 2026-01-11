@@ -1,4 +1,5 @@
 import 'package:community_sports_league_scheduler/authprovider.dart';
+import 'package:community_sports_league_scheduler/pages/availability_page.dart';
 import 'package:community_sports_league_scheduler/router.dart';
 
 import 'package:community_sports_league_scheduler/pages/assignments_page.dart';
@@ -81,6 +82,14 @@ class SportsLeagueScheduler extends StatelessWidget {
           GoRoute(
             path: '/assignments',
             builder: (_, __) => const AssignmentsPage(),
+            redirect: (context, state) {
+              final auth = context.read<AuthProvider>();
+              return !auth.hasRole('REFEREE') ? '/' : null;
+            }
+          ),
+          GoRoute(
+            path: '/availabilities',
+            builder: (_, __) => const AvailabilityPage(),
             redirect: (context, state) {
               final auth = context.read<AuthProvider>();
               return !auth.hasRole('REFEREE') ? '/' : null;

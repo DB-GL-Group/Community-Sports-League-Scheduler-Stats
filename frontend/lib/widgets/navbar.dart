@@ -70,6 +70,11 @@ class NavBar extends StatelessWidget {
           title: Text('Assignments'),
           trailing: Text('2'),
           onTap: () => context.go('/assignments'),
+        ),
+        ListTile(
+          leading: Icon(Icons.calendar_month),
+          title: Text('Availabilities'),
+          onTap: () => context.go('/availabilities'),
         )
       ]);
     }
