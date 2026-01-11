@@ -1,5 +1,17 @@
 from shared.db import get_async_pool
 
+async def get_all_teams_id():
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT id
+            FROM teams
+            """
+        )
+        allTeamsIDs = await cur.fetchall()
+        return(allTeamsIDs)
+
 
 async def create_team(division, name, manager_id, short_name, color_primary, color_secondary):
     pool = get_async_pool()
