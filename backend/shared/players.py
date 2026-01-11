@@ -1,4 +1,4 @@
-from api.app.repositories.persons import create_person
+from shared.persons import create_person
 from shared.db import get_async_pool
 
 
