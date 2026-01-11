@@ -15,6 +15,7 @@ async def get_all_matches():
 
 
 async def add_match(
+    division,
     slot_id,
     home_team_id,
     away_team_id,
@@ -29,13 +30,14 @@ async def add_match(
         await cur.execute(
             """
             INSERT INTO matches (
-                slot_id, home_team_id, away_team_id, main_referee_id,
+                division, slot_id, home_team_id, away_team_id, main_referee_id,
                 status, home_score, away_score, notes
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
             """,
             (
+                division,
                 slot_id,
                 home_team_id,
                 away_team_id,

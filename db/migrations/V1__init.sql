@@ -24,11 +24,13 @@ CREATE TABLE referees (
 
 CREATE TABLE teams (
     id              SERIAL PRIMARY KEY,
+    division        INTEGER NOT NULL,
     name            VARCHAR(100) NOT NULL,
     manager_id      INTEGER REFERENCES managers(person_id),
     short_name      VARCHAR(20),
     color_primary   VARCHAR(50),
-    color_secondary VARCHAR(50)
+    color_secondary VARCHAR(50),
+    UNIQUE (division, name)
 );
 
 CREATE TABLE player_team (
@@ -67,6 +69,7 @@ CREATE TABLE slots (
 
 CREATE TABLE matches (
     id              SERIAL PRIMARY KEY,
+    division        INTEGER NOT NULL,
     slot_id         INTEGER NOT NULL UNIQUE REFERENCES slots(id),
     home_team_id    INTEGER NOT NULL REFERENCES teams(id),
     away_team_id    INTEGER NOT NULL REFERENCES teams(id),
@@ -228,6 +231,7 @@ CREATE TABLE notification_settings (
 -- Matches (accès rapide par équipe / status)
 CREATE INDEX idx_matches_home_team ON matches(home_team_id);
 CREATE INDEX idx_matches_away_team ON matches(away_team_id);
+CREATE INDEX idx_matches_division_status ON matches(division, status);
 
 -- Events
 CREATE INDEX idx_goals_match ON goals(match_id);

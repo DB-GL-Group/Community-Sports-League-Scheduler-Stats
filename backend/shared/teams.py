@@ -1,16 +1,16 @@
 from shared.db import get_async_pool
 
 
-async def create_team(name, manager_id, short_name, color_primary, color_secondary):
+async def create_team(division, name, manager_id, short_name, color_primary, color_secondary):
     pool = get_async_pool()
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
             """
-            INSERT INTO teams (name, manager_id, short_name, color_primary, color_secondary)
+            INSERT INTO teams (division, name, manager_id, short_name, color_primary, color_secondary)
             VALUES (%s, %s, %s, %s, %s, %s)
-            RETURNING id, name, manager_id, short_name, color_primary, color_secondary
+            RETURNING id, division, name, manager_id, short_name, color_primary, color_secondary
             """,
-            (name, manager_id, short_name, color_primary, color_secondary),
+            (division, name, manager_id, short_name, color_primary, color_secondary),
         )
         team = await cur.fetchone()
         await conn.commit()
