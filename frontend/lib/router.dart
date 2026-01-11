@@ -7,11 +7,11 @@ class ApiRouter {
 
   final String baseUrl;
 
-  Future<dynamic> fetchData(String endpoint, {String method = 'GET', Map<String, String> body = const {}}) async {
+  Future<dynamic> fetchData(String endpoint, {String method = 'GET', Map<String, String> body = const {}, String token = ''}) async {
     final response = switch (method) {
       'GET' => await http.get(Uri.parse('$baseUrl/$endpoint')),
       'POST' => await http.post(Uri.parse('$baseUrl/$endpoint'),
-        headers: {"Content-Type": "application/json"},
+        headers: {"Content-Type": "application/json", "Authorization": "Bearer ${token}"},
         body: json.encode(body)
       ),
       String() => throw UnimplementedError(),

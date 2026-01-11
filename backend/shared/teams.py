@@ -39,7 +39,7 @@ async def create_team(division, name, manager_id, short_name, color_primary, col
         )
         team = await cur.fetchone()
         await conn.commit()
-        return team
+        return {"id" : team[0]}
 
 
 async def add_player(player_id, team_id):

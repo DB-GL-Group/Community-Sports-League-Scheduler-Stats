@@ -8,12 +8,12 @@ async def create_manager(first_name: str, last_name: str, email: str, phone: str
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
             """
-            INSERT INTO managers (id)
+            INSERT INTO managers (person_id)
             VALUES (%s)
-            RETURNING id
+            RETURNING person_id
             """,
             (person_info["id"],),
         )
         manager_id = await cur.fetchone()
         await conn.commit()
-        return {"id": manager_id[0]}
+        return {"id" : manager_id[0]}

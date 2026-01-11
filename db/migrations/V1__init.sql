@@ -48,7 +48,8 @@ CREATE TABLE player_team (
 CREATE TABLE venues (
     id      SERIAL PRIMARY KEY,
     name    VARCHAR(100) NOT NULL,
-    address VARCHAR(255)
+    address VARCHAR(255)--,
+    -- UNIQUE (name, address)
 );
 
 CREATE TABLE courts (

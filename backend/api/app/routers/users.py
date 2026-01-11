@@ -125,6 +125,63 @@ async def list_referee_availability(current_user: UserResponse = Depends(require
         for row in rows
     ]
 
+
+@router.post("/referee/availability", status_code=status.HTTP_201_CREATED)
+async def add_referee_availability_slot(
+    payload: RefereeAvailabilityRequest,
+    current_user: UserResponse = Depends(require_role("REFEREE")),
+):
+    if not current_user.get("person_id"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Referee profile missing")
+    row = await add_referee_availability(current_user["person_id"], payload.slot_id)
+    if not row:
+        return {"status": "exists"}
+    return {"status": "created"}
+
+
+@router.put("/referee/availability")
+async def replace_referee_availability_slots(
+    payload: RefereeAvailabilityUpdateRequest,
+    current_user: UserResponse = Depends(require_role("REFEREE")),
+):
+    if not current_user.get("person_id"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Referee profile missing")
+    return await replace_referee_availability(current_user["person_id"], payload.slot_ids)
+
+
+@router.delete("/referee/availability/{slot_id}")
+async def remove_referee_availability_slot(
+    slot_id: int,
+    current_user: UserResponse = Depends(require_role("REFEREE")),
+):
+    if not current_user.get("person_id"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Referee profile missing")
+    row = await remove_referee_availability(current_user["person_id"], slot_id)
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Availability not found")
+    return {"status": "deleted"}
+
+
+@router.get("/referee/matches", response_model=list[MatchPreviewResponse])
+async def list_referee_matches(current_user: UserResponse = Depends(require_role("REFEREE"))):
+    if not current_user.get("person_id"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Referee profile missing")
+    rows = await get_referee_matches(current_user["person_id"])
+    return [
+        {
+            "id": row[0],
+            "division": row[1],
+            "status": row[2],
+            "home_team": row[3],
+            "away_team": row[4],
+            "home_score": row[5],
+            "away_score": row[6],
+            "start_time": row[7].isoformat() if hasattr(row[7], "isoformat") else str(row[7]),
+        }
+        for row in rows
+    ]
+
+
 #============= FAN =============#
 @router.get("/favorites/teams", response_model=list[int])
 async def list_favorite_teams_endpoint(current_user: UserResponse = Depends(require_role("FAN"))):
@@ -244,59 +301,3 @@ async def update_notification_settings_endpoint(
         "notify_match_result": row[3],
         "notify_team_news": row[4],
     }
-
-
-@router.post("/referee/availability", status_code=status.HTTP_201_CREATED)
-async def add_referee_availability_slot(
-    payload: RefereeAvailabilityRequest,
-    current_user: UserResponse = Depends(require_role("REFEREE")),
-):
-    if not current_user.get("person_id"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Referee profile missing")
-    row = await add_referee_availability(current_user["person_id"], payload.slot_id)
-    if not row:
-        return {"status": "exists"}
-    return {"status": "created"}
-
-
-@router.put("/referee/availability")
-async def replace_referee_availability_slots(
-    payload: RefereeAvailabilityUpdateRequest,
-    current_user: UserResponse = Depends(require_role("REFEREE")),
-):
-    if not current_user.get("person_id"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Referee profile missing")
-    return await replace_referee_availability(current_user["person_id"], payload.slot_ids)
-
-
-@router.delete("/referee/availability/{slot_id}")
-async def remove_referee_availability_slot(
-    slot_id: int,
-    current_user: UserResponse = Depends(require_role("REFEREE")),
-):
-    if not current_user.get("person_id"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Referee profile missing")
-    row = await remove_referee_availability(current_user["person_id"], slot_id)
-    if not row:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Availability not found")
-    return {"status": "deleted"}
-
-
-@router.get("/referee/matches", response_model=list[MatchPreviewResponse])
-async def list_referee_matches(current_user: UserResponse = Depends(require_role("REFEREE"))):
-    if not current_user.get("person_id"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Referee profile missing")
-    rows = await get_referee_matches(current_user["person_id"])
-    return [
-        {
-            "id": row[0],
-            "division": row[1],
-            "status": row[2],
-            "home_team": row[3],
-            "away_team": row[4],
-            "home_score": row[5],
-            "away_score": row[6],
-            "start_time": row[7].isoformat() if hasattr(row[7], "isoformat") else str(row[7]),
-        }
-        for row in rows
-    ]

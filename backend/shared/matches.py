@@ -141,7 +141,11 @@ async def get_match_previews():
                    at.name AS away_team,
                    COALESCE(m.home_score, 0) AS home_score,
                    COALESCE(m.away_score, 0) AS away_score,
-                   s.start_time
+                   s.start_time,
+                   ht.color_primary AS home_primary_color,
+                   ht.color_secondary AS home_secondary_color,
+                   at.color_primary AS away_primary_color,
+                   at.color_secondary AS away_secondary_color
             FROM matches m
             JOIN teams ht ON ht.id = m.home_team_id
             JOIN teams at ON at.id = m.away_team_id
@@ -196,7 +200,7 @@ async def get_match_id_with_scores(match_id):
         return {matchScores}
     
 async def get_match_winner(match_id):
-    scores = get_match_id_with_scores(match_id)
+    scores = await get_match_id_with_scores(match_id)
     if scores[2] == scores[3]:
         return -1
     elif scores[2] > scores[3]:
@@ -207,15 +211,15 @@ async def get_match_winner(match_id):
     
 
 async def get_finalists():
-    allTeamsIDs = get_all_teams_id()
-    allMatchesIDs = get_all_matches_id()
+    allTeamsIDs = await get_all_teams_id()
+    allMatchesIDs = await get_all_matches_id()
 
     nbrWinsPerTeam = {}
     for i in allTeamsIDs:
         nbrWinsPerTeam.update({i : 0})
     
     for i in allMatchesIDs:
-        matchWinnerID = get_match_winner(i)
+        matchWinnerID = await get_match_winner(i)
         nbrWinsPerTeam[matchWinnerID] += 1
 
     sortedNbrWinsPerTeam = sorted(set(nbrWinsPerTeam.values()), reverse=True)
