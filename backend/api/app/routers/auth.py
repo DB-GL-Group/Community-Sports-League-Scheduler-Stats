@@ -10,7 +10,14 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/signup", response_model=UserResponse)
 async def signup(payload: SignupRequest):
     try:
-        user = await auth_service.signup(payload.email, payload.password, payload.roles)
+        user = await auth_service.signup(
+            payload.first_name,
+            payload.last_name,
+            payload.email,
+            payload.phone,
+            payload.password,
+            payload.roles,
+        )
         return user
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))

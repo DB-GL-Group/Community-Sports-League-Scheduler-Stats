@@ -8,10 +8,13 @@ async def add_slot(court_id, start_time, end_time):
             """
             INSERT INTO slots (court_id, start_time, end_time)
             VALUES (%s, %s, %s)
-            RETURNING id
+            RETURNING id, court_id, start_time, end_time
             """,
             (court_id, start_time, end_time),
         )
         slot = await cur.fetchone()
         await conn.commit()
-        return {"id": slot[0]}
+        if not slot:
+            return {}
+        return {"id": slot[0], "court_id": slot[1], "start_time": slot[2], "end_time": slot[3]}
+    

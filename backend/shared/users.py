@@ -1,4 +1,5 @@
 from shared.db import get_async_pool
+from shared.persons import create_person
 
 
 async def get_user_by_email(email: str):
@@ -8,7 +9,16 @@ async def get_user_by_email(email: str):
             "SELECT id, email, is_active, created_at, person_id FROM users WHERE email=%s",
             (email,),
         )
-        return await cur.fetchone()
+        row = await cur.fetchone()
+        if not row:
+            return {}
+        return {
+            "id": row[0],
+            "email": row[1],
+            "is_active": row[2],
+            "created_at": row[3],
+            "person_id": row[4],
+        }
 
 
 async def get_user_by_id_with_roles(user_id: int):
@@ -27,7 +37,17 @@ async def get_user_by_id_with_roles(user_id: int):
             """,
             (user_id,),
         )
-        return await cur.fetchone()
+        row = await cur.fetchone()
+        if not row:
+            return {}
+        return {
+            "id": row[0],
+            "email": row[1],
+            "is_active": row[2],
+            "created_at": row[3],
+            "person_id": row[4],
+            "roles": row[5] or [],
+        }
 
 
 async def get_user_with_credentials(email: str):
@@ -46,15 +66,38 @@ async def get_user_with_credentials(email: str):
             """,
             (email,),
         )
-        return await cur.fetchone()
+        row = await cur.fetchone()
+        if not row:
+            return {}
+        return {
+            "id": row[0],
+            "email": row[1],
+            "password_hash": row[2],
+            "is_active": row[3],
+            "created_at": row[4],
+            "person_id": row[5],
+            "roles": row[6] or [],
+        }
 
 
-async def create_user(email: str, password_hash: str, roles: list[str]):
+async def create_user(
+    first_name: str,
+    last_name: str,
+    email: str,
+    phone: str,
+    password_hash: str,
+    roles: list[str],
+):
+    person = await create_person(first_name, last_name, email, phone)
     pool = get_async_pool()
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
-            "INSERT INTO users (email, password_hash) VALUES (%s, %s) RETURNING id, created_at, is_active",
-            (email, password_hash),
+            """
+            INSERT INTO users (email, password_hash, person_id)
+            VALUES (%s, %s, %s)
+            RETURNING id, created_at, is_active, person_id
+            """,
+            (email, password_hash, person["id"]),
         )
         user = await cur.fetchone()
         await cur.execute("SELECT id, name FROM roles WHERE name = ANY(%s)", (roles,))
@@ -72,5 +115,6 @@ async def create_user(email: str, password_hash: str, roles: list[str]):
             "email": email,
             "is_active": user[2],
             "created_at": user[1],
+            "person_id": user[3],
             "roles": [r[1] for r in role_rows],
         }

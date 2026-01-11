@@ -49,13 +49,13 @@ async def get_team(current_user: UserResponse = Depends(require_role("MANAGER"))
     if not team:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
     return {
-        "id": team[0],
-        "division": team[1],
-        "name": team[2],
-        "manager_id": team[3],
-        "short_name": team[4],
-        "color_primary": team[5],
-        "color_secondary": team[6],
+        "id": team["id"],
+        "division": team["division"],
+        "name": team["name"],
+        "manager_id": team["manager_id"],
+        "short_name": team["short_name"],
+        "color_primary": team["color_primary"],
+        "color_secondary": team["color_secondary"],
     }
 
 @router.post("/manager/team", response_model=TeamResponse, status_code=status.HTTP_201_CREATED)
@@ -74,13 +74,13 @@ async def add_team(
         payload.color_secondary,
     )
     return {
-        "id": team[0],
-        "division": team[1],
-        "name": team[2],
-        "manager_id": team[3],
-        "short_name": team[4],
-        "color_primary": team[5],
-        "color_secondary": team[6],
+        "id": team["id"],
+        "division": team["division"],
+        "name": team["name"],
+        "manager_id": team["manager_id"],
+        "short_name": team["short_name"],
+        "color_primary": team["color_primary"],
+        "color_secondary": team["color_secondary"],
     }
 
 @router.post("/manager/team/players", status_code=status.HTTP_201_CREATED)
@@ -93,7 +93,7 @@ async def add_team_player(
     team = await get_team_by_manager_id(current_user["person_id"])
     if not team:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
-    row = await add_player(payload.player_id, team[0])
+    row = await add_player(payload.player_id, team["id"])
     if not row:
         return {"status": "exists"}
     return {"status": "created"}
@@ -109,7 +109,7 @@ async def remove_team_player(
     team = await get_team_by_manager_id(current_user["person_id"])
     if not team:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
-    row = await remove_player_from_team(player_id, team[0])
+    row = await remove_player_from_team(player_id, team["id"])
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Player not found in team")
     return {"status": "deleted"}
@@ -120,10 +120,7 @@ async def list_referee_availability(current_user: UserResponse = Depends(require
     if not current_user.get("person_id"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Referee profile missing")
     rows = await get_referee_availability(current_user["person_id"])
-    return [
-        {"slot_id": row[0], "court_id": row[1], "start_time": row[2], "end_time": row[3]}
-        for row in rows
-    ]
+    return rows
 
 
 @router.post("/referee/availability", status_code=status.HTTP_201_CREATED)
@@ -169,14 +166,16 @@ async def list_referee_matches(current_user: UserResponse = Depends(require_role
     rows = await get_referee_matches(current_user["person_id"])
     return [
         {
-            "id": row[0],
-            "division": row[1],
-            "status": row[2],
-            "home_team": row[3],
-            "away_team": row[4],
-            "home_score": row[5],
-            "away_score": row[6],
-            "start_time": row[7].isoformat() if hasattr(row[7], "isoformat") else str(row[7]),
+            "id": row["id"],
+            "division": row["division"],
+            "status": row["status"],
+            "home_team": row["home_team"],
+            "away_team": row["away_team"],
+            "home_score": row["home_score"],
+            "away_score": row["away_score"],
+            "start_time": row["start_time"].isoformat()
+            if hasattr(row["start_time"], "isoformat")
+            else str(row["start_time"]),
         }
         for row in rows
     ]
@@ -186,7 +185,7 @@ async def list_referee_matches(current_user: UserResponse = Depends(require_role
 @router.get("/favorites/teams", response_model=list[int])
 async def list_favorite_teams_endpoint(current_user: UserResponse = Depends(require_role("FAN"))):
     rows = await list_favorite_teams(current_user["id"])
-    return [row[0] for row in rows]
+    return [row["team_id"] for row in rows]
 
 
 @router.post("/favorites/teams", status_code=status.HTTP_201_CREATED)
@@ -214,7 +213,7 @@ async def remove_favorite_team_endpoint(
 @router.get("/subscriptions/teams", response_model=list[int])
 async def list_team_subscriptions_endpoint(current_user: UserResponse = Depends(require_role("FAN"))):
     rows = await list_team_subscriptions(current_user["id"])
-    return [row[0] for row in rows]
+    return [row["team_id"] for row in rows]
 
 
 @router.post("/subscriptions/teams", status_code=status.HTTP_201_CREATED)
@@ -242,7 +241,7 @@ async def remove_team_subscription_endpoint(
 @router.get("/subscriptions/players", response_model=list[int])
 async def list_player_subscriptions_endpoint(current_user: UserResponse = Depends(require_role("FAN"))):
     rows = await list_player_subscriptions(current_user["id"])
-    return [row[0] for row in rows]
+    return [row["player_id"] for row in rows]
 
 
 @router.post("/subscriptions/players", status_code=status.HTTP_201_CREATED)
@@ -273,11 +272,11 @@ async def get_notification_settings_endpoint(
 ):
     row = await get_notification_settings(current_user["id"])
     return {
-        "email_enabled": row[0],
-        "push_enabled": row[1],
-        "notify_match_start": row[2],
-        "notify_match_result": row[3],
-        "notify_team_news": row[4],
+        "email_enabled": row["email_enabled"],
+        "push_enabled": row["push_enabled"],
+        "notify_match_start": row["notify_match_start"],
+        "notify_match_result": row["notify_match_result"],
+        "notify_team_news": row["notify_team_news"],
     }
 
 
@@ -295,9 +294,9 @@ async def update_notification_settings_endpoint(
         notify_team_news=payload.notify_team_news,
     )
     return {
-        "email_enabled": row[0],
-        "push_enabled": row[1],
-        "notify_match_start": row[2],
-        "notify_match_result": row[3],
-        "notify_team_news": row[4],
+        "email_enabled": row["email_enabled"],
+        "push_enabled": row["push_enabled"],
+        "notify_match_start": row["notify_match_start"],
+        "notify_match_result": row["notify_match_result"],
+        "notify_team_news": row["notify_team_news"],
     }

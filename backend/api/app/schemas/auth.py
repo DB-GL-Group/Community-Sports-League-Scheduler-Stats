@@ -4,7 +4,10 @@ from pydantic import BaseModel, EmailStr
 
 
 class SignupRequest(BaseModel):
+    first_name: str
+    last_name: str
     email: EmailStr
+    phone: str
     password: str
     roles: list[str] = ["FAN"]
 

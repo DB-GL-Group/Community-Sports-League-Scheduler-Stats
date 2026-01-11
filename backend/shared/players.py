@@ -16,4 +16,6 @@ async def create_player(first_name: str, last_name: str, email: str, phone: str)
         )
         player_id = await cur.fetchone()
         await conn.commit()
+        if not player_id:
+            return {}
         return {"id": player_id[0]}

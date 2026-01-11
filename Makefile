@@ -53,7 +53,7 @@ flutter-setup:
 
 # Some test requests
 test-signup:
-	powershell -NoProfile -Command "$$email = $$env:TEST_EMAIL; if (-not $$email) { $$email = 'test.user@example.com' }; $$password = $$env:TEST_PASSWORD; if (-not $$password) { $$password = 'test123' }; $$body = @{ email = $$email; password = $$password; roles = @('FAN') } | ConvertTo-Json; Invoke-RestMethod -Method Post -Uri http://localhost:8000/auth/signup -ContentType 'application/json' -Body $$body | ConvertTo-Json -Depth 5"
+	powershell -NoProfile -Command "$$email = $$env:TEST_EMAIL; if (-not $$email) { $$email = 'test.user@example.com' }; $$password = $$env:TEST_PASSWORD; if (-not $$password) { $$password = 'test123' }; $$first = $$env:TEST_FIRST_NAME; if (-not $$first) { $$first = 'Test' }; $$last = $$env:TEST_LAST_NAME; if (-not $$last) { $$last = 'User' }; $$phone = $$env:TEST_PHONE; if (-not $$phone) { $$phone = '+10000000000' }; $$body = @{ first_name = $$first; last_name = $$last; email = $$email; phone = $$phone; password = $$password; roles = @('FAN') } | ConvertTo-Json; Invoke-RestMethod -Method Post -Uri http://localhost:8000/auth/signup -ContentType 'application/json' -Body $$body | ConvertTo-Json -Depth 5"
 
 test-login:
 	powershell -NoProfile -Command "$$email = $$env:TEST_EMAIL; if (-not $$email) { $$email = 'test.user@example.com' }; $$password = $$env:TEST_PASSWORD; if (-not $$password) { $$password = 'test123' }; $$body = @{ email = $$email; password = $$password } | ConvertTo-Json; Invoke-RestMethod -Method Post -Uri http://localhost:8000/auth/login -ContentType 'application/json' -Body $$body | ConvertTo-Json -Depth 5"

@@ -16,4 +16,6 @@ async def create_manager(first_name: str, last_name: str, email: str, phone: str
         )
         manager_id = await cur.fetchone()
         await conn.commit()
-        return {"id" : manager_id[0]}
+        if not manager_id:
+            return {}
+        return {"id": manager_id[0]}

@@ -5,31 +5,37 @@ from datetime import datetime, timedelta, timezone
 import jwt
 from passlib.hash import argon2
 
-from shared import users as repo
+from shared import users 
 
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_EXPIRES_MINUTES = int(os.getenv("JWT_EXPIRES_MINUTES", "60"))
 
 
-def _build_user_dict(raw):
-    user_id, email, is_active, created_at, person_id, roles = raw
+def _build_user_dict(raw: dict) -> dict:
     return {
-        "id": user_id,
-        "email": email,
-        "is_active": is_active,
-        "created_at": created_at,
-        "person_id": person_id,
-        "roles": roles or [],
+        "id": raw.get("id"),
+        "email": raw.get("email"),
+        "is_active": raw.get("is_active"),
+        "created_at": raw.get("created_at"),
+        "person_id": raw.get("person_id"),
+        "roles": raw.get("roles", []),
     }
 
 
-async def signup(email: str, password: str, roles: list[str]):
-    if await repo.get_user_by_email(email):
+async def signup(
+    first_name: str,
+    last_name: str,
+    email: str,
+    phone: str,
+    password: str,
+    roles: list[str],
+):
+    if await users.get_user_by_email(email):
         raise ValueError("Email already used")
     password_hash = argon2.hash(password)
     normalized = [r.upper() for r in roles]
-    return await repo.create_user(email, password_hash, normalized)
+    return await users.create_user(first_name, last_name, email, phone, password_hash, normalized)
 
 
 def create_access_token(user: dict) -> str:
@@ -54,29 +60,28 @@ def decode_access_token(token: str) -> dict:
 
 
 async def login(email: str, password: str):
-    user = await repo.get_user_with_credentials(email)
+    user = await users.get_user_with_credentials(email)
     if not user:
         raise ValueError("Invalid credentials")
-    user_id, user_email, password_hash, is_active, created_at, person_id, roles = user
-    if not is_active:
+    if not user.get("is_active"):
         raise ValueError("User is inactive")
-    if not argon2.verify(password, password_hash):
+    if not argon2.verify(password, user.get("password_hash", "")):
         raise ValueError("Invalid credentials")
 
     user_dict = {
-        "id": user_id,
-        "email": user_email,
-        "is_active": is_active,
-        "created_at": created_at,
-        "person_id": person_id,
-        "roles": roles or [],
+        "id": user["id"],
+        "email": user["email"],
+        "is_active": user["is_active"],
+        "created_at": user["created_at"],
+        "person_id": user.get("person_id"),
+        "roles": user.get("roles", []),
     }
     token = create_access_token(user_dict)
     return {"access_token": token, "token_type": "bearer", "user": user_dict}
 
 
 async def get_user_by_id(user_id: int):
-    raw = await repo.get_user_by_id_with_roles(user_id)
+    raw = await users.get_user_by_id_with_roles(user_id)
     if not raw:
         return None
     return _build_user_dict(raw)

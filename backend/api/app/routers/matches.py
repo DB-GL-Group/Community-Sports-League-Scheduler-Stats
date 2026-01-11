@@ -14,18 +14,20 @@ async def list_match_previews():
     rows = await get_match_previews()
     return [
         {
-            "id": row[0],
-            "division": row[1],
-            "status": row[2],
-            "home_team": row[3],
-            "away_team": row[4],
-            "home_score": row[5],
-            "away_score": row[6],
-            "start_time": row[7].isoformat() if hasattr(row[7], "isoformat") else str(row[7]),
-            "home_primary_color": row[8],
-            "home_secondary_color": row[9],
-            "away_primary_color": row[10],
-            "away_secondary_color": row[11],
+            "id": row["id"],
+            "division": row["division"],
+            "status": row["status"],
+            "home_team": row["home_team"],
+            "away_team": row["away_team"],
+            "home_score": row["home_score"],
+            "away_score": row["away_score"],
+            "start_time": row["start_time"].isoformat()
+            if hasattr(row["start_time"], "isoformat")
+            else str(row["start_time"]),
+            "home_primary_color": row["home_primary_color"],
+            "home_secondary_color": row["home_secondary_color"],
+            "away_primary_color": row["away_primary_color"],
+            "away_secondary_color": row["away_secondary_color"],
         }
         for row in rows
     ]
@@ -36,15 +38,19 @@ async def get_match_details(match_id: int, current_user: UserResponse = Depends(
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
     return {
-        "id": row[0],
-        "division": row[1],
-        "status": row[2],
-        "home_team": row[3],
-        "away_team": row[4],
-        "home_score": row[5],
-        "away_score": row[6],
-        "start_time": row[7].isoformat() if hasattr(row[7], "isoformat") else str(row[7]),
-        "current_time": row[8].isoformat() if hasattr(row[8], "isoformat") else str(row[8]),
-        "main_referee": row[9],
-        "notes": row[10],
+        "id": row["id"],
+        "division": row["division"],
+        "status": row["status"],
+        "home_team": row["home_team"],
+        "away_team": row["away_team"],
+        "home_score": row["home_score"],
+        "away_score": row["away_score"],
+        "start_time": row["start_time"].isoformat()
+        if hasattr(row["start_time"], "isoformat")
+        else str(row["start_time"]),
+        "current_time": row["current_time"].isoformat()
+        if hasattr(row["current_time"], "isoformat")
+        else str(row["current_time"]),
+        "main_referee": row["main_referee"],
+        "notes": row["notes"],
     }

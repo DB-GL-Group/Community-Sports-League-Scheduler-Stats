@@ -14,4 +14,6 @@ async def add_venue(name, address):
         )
         venue = await cur.fetchone()
         await conn.commit()
-        return {"id": venue[0]}
+        if not venue:
+            return {}
+        return {"id": venue[0], "name": venue[1], "address": venue[2]}

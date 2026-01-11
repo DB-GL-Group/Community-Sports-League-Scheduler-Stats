@@ -9,8 +9,8 @@ async def get_all_teams_id():
             FROM teams
             """
         )
-        allTeamsIDs = await cur.fetchall()
-        return(allTeamsIDs)
+        rows = await cur.fetchall()
+        return [{"id": row[0]} for row in rows]
 
 async def get_team_by_manager_id(manager_id: int):
     pool = get_async_pool()
@@ -23,7 +23,18 @@ async def get_team_by_manager_id(manager_id: int):
             """,
             (manager_id,),
         )
-        return await cur.fetchone()
+        row = await cur.fetchone()
+        if not row:
+            return {}
+        return {
+            "id": row[0],
+            "division": row[1],
+            "name": row[2],
+            "manager_id": row[3],
+            "short_name": row[4],
+            "color_primary": row[5],
+            "color_secondary": row[6],
+        }
 
 
 async def create_team(division, name, manager_id, short_name, color_primary, color_secondary):
@@ -39,7 +50,17 @@ async def create_team(division, name, manager_id, short_name, color_primary, col
         )
         team = await cur.fetchone()
         await conn.commit()
-        return {"id" : team[0]}
+        if not team:
+            return {}
+        return {
+            "id": team[0],
+            "division": team[1],
+            "name": team[2],
+            "manager_id": team[3],
+            "short_name": team[4],
+            "color_primary": team[5],
+            "color_secondary": team[6],
+        }
 
 
 async def add_player(player_id, team_id):
@@ -56,7 +77,14 @@ async def add_player(player_id, team_id):
         )
         player_team = await cur.fetchone()
         await conn.commit()
-        return player_team
+        if not player_team:
+            return {}
+        return {
+            "player_id": player_team[0],
+            "team_id": player_team[1],
+            "shirt_number": player_team[2],
+            "active": player_team[3],
+        }
 
 
 async def remove_player_from_team(player_id, team_id):
@@ -72,4 +100,6 @@ async def remove_player_from_team(player_id, team_id):
         )
         row = await cur.fetchone()
         await conn.commit()
-        return row
+        if not row:
+            return {}
+        return {"player_id": row[0], "team_id": row[1]}

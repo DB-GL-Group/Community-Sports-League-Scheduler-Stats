@@ -16,6 +16,8 @@ async def create_referee(first_name: str, last_name: str, email: str, phone: str
         )
         referee_id = await cur.fetchone()
         await conn.commit()
+        if not referee_id:
+            return {}
         return {"id": referee_id[0]}
 
 
@@ -32,7 +34,11 @@ async def get_referee_availability(referee_id: int):
             """,
             (referee_id,),
         )
-        return await cur.fetchall()
+        rows = await cur.fetchall()
+        return [
+            {"slot_id": row[0], "court_id": row[1], "start_time": row[2], "end_time": row[3]}
+            for row in rows
+        ]
 
 
 async def add_referee_availability(referee_id: int, slot_id: int):
@@ -49,7 +55,9 @@ async def add_referee_availability(referee_id: int, slot_id: int):
         )
         row = await cur.fetchone()
         await conn.commit()
-        return row
+        if not row:
+            return {}
+        return {"id": row[0], "slot_id": row[1]}
 
 
 async def remove_referee_availability(referee_id: int, slot_id: int):
@@ -65,7 +73,9 @@ async def remove_referee_availability(referee_id: int, slot_id: int):
         )
         row = await cur.fetchone()
         await conn.commit()
-        return row
+        if not row:
+            return {}
+        return {"id": row[0], "slot_id": row[1]}
 
 
 async def replace_referee_availability(referee_id: int, slot_ids: list[int]):
@@ -78,7 +88,7 @@ async def replace_referee_availability(referee_id: int, slot_ids: list[int]):
                 [(referee_id, slot_id) for slot_id in slot_ids],
             )
         await conn.commit()
-        return {"referee_id": referee_id, "count": len(slot_ids)}
+        return {"id": referee_id, "count": len(slot_ids)}
 
 
 async def get_referee_matches(referee_id: int):
@@ -105,4 +115,44 @@ async def get_referee_matches(referee_id: int):
             """,
             (referee_id, referee_id),
         )
-        return await cur.fetchall()
+        rows = await cur.fetchall()
+        return [
+            {
+                "id": row[0],
+                "division": row[1],
+                "status": row[2],
+                "home_team": row[3],
+                "away_team": row[4],
+                "home_score": row[5],
+                "away_score": row[6],
+                "start_time": row[7],
+            }
+            for row in rows
+        ]
+
+async def get_match_slots_without_referee():
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT s.id, s.court_id, s.start_time, s.end_time, m.id AS match_id
+            FROM matches m
+            JOIN slots s ON s.id = m.slot_id
+            LEFT JOIN match_referees mr ON mr.match_id = m.id
+            WHERE m.main_referee_id IS NULL
+              AND mr.match_id IS NULL
+            ORDER BY s.start_time
+            """
+        )
+        rows = await cur.fetchall()
+        return [
+            {
+                "slot_id": row[0],
+                "court_id": row[1],
+                "start_time": row[2],
+                "end_time": row[3],
+                "match_id": row[4],
+            }
+            for row in rows
+        ]
+        
