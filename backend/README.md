@@ -47,5 +47,5 @@ make backend-db-conn # Vérifie que le backend répond
 
 ## Worker (RQ + Redis)
 - Demarrer les services: `docker compose up --build`
-- Lancer un job: `POST /schedule/run`
-- Suivre un job: `GET /schedule/{job_id}`
+- Lancer un job: `POST /scheduler/run`
+- Suivre un job: `GET /scheduler`
