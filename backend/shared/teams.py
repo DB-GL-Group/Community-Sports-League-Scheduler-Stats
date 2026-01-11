@@ -12,6 +12,19 @@ async def get_all_teams_id():
         allTeamsIDs = await cur.fetchall()
         return(allTeamsIDs)
 
+async def get_team_by_manager_id(manager_id: int):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT id, division, name, manager_id, short_name, color_primary, color_secondary
+            FROM teams
+            WHERE manager_id = %s
+            """,
+            (manager_id,),
+        )
+        return await cur.fetchone()
+
 
 async def create_team(division, name, manager_id, short_name, color_primary, color_secondary):
     pool = get_async_pool()

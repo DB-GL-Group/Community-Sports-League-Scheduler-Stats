@@ -20,6 +20,7 @@ class UserResponse(BaseModel):
     roles: list[str]
     is_active: bool
     created_at: datetime
+    person_id: int | None = None
 
 
 class TokenResponse(BaseModel):

@@ -4,7 +4,10 @@ from shared.db import get_async_pool
 async def get_user_by_email(email: str):
     pool = get_async_pool()
     async with pool.connection() as conn, conn.cursor() as cur:
-        await cur.execute("SELECT id, email, is_active, created_at FROM users WHERE email=%s", (email,))
+        await cur.execute(
+            "SELECT id, email, is_active, created_at, person_id FROM users WHERE email=%s",
+            (email,),
+        )
         return await cur.fetchone()
 
 
@@ -14,7 +17,7 @@ async def get_user_by_id_with_roles(user_id: int):
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
             """
-            SELECT u.id, u.email, u.is_active, u.created_at,
+            SELECT u.id, u.email, u.is_active, u.created_at, u.person_id,
                    COALESCE(array_agg(r.name ORDER BY r.name) FILTER (WHERE r.name IS NOT NULL), '{}') AS roles
             FROM users u
             LEFT JOIN user_roles ur ON ur.user_id = u.id
@@ -33,7 +36,7 @@ async def get_user_with_credentials(email: str):
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
             """
-            SELECT u.id, u.email, u.password_hash, u.is_active, u.created_at,
+            SELECT u.id, u.email, u.password_hash, u.is_active, u.created_at, u.person_id,
                    COALESCE(array_agg(r.name ORDER BY r.name) FILTER (WHERE r.name IS NOT NULL), '{}') AS roles
             FROM users u
             LEFT JOIN user_roles ur ON ur.user_id = u.id

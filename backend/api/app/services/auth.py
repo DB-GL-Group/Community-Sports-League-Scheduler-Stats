@@ -13,12 +13,13 @@ JWT_EXPIRES_MINUTES = int(os.getenv("JWT_EXPIRES_MINUTES", "60"))
 
 
 def _build_user_dict(raw):
-    user_id, email, is_active, created_at, roles = raw
+    user_id, email, is_active, created_at, person_id, roles = raw
     return {
         "id": user_id,
         "email": email,
         "is_active": is_active,
         "created_at": created_at,
+        "person_id": person_id,
         "roles": roles or [],
     }
 
@@ -36,6 +37,7 @@ def create_access_token(user: dict) -> str:
     payload = {
         "sub": str(user["id"]),
         "email": user["email"],
+        "person_id": user.get("person_id"),
         "roles": user.get("roles", []),
         "exp": expires,
     }
@@ -55,7 +57,7 @@ async def login(email: str, password: str):
     user = await repo.get_user_with_credentials(email)
     if not user:
         raise ValueError("Invalid credentials")
-    user_id, user_email, password_hash, is_active, created_at, roles = user
+    user_id, user_email, password_hash, is_active, created_at, person_id, roles = user
     if not is_active:
         raise ValueError("User is inactive")
     if not argon2.verify(password, password_hash):
@@ -66,6 +68,7 @@ async def login(email: str, password: str):
         "email": user_email,
         "is_active": is_active,
         "created_at": created_at,
+        "person_id": person_id,
         "roles": roles or [],
     }
     token = create_access_token(user_dict)
