@@ -8,9 +8,9 @@ async def create_referee(first_name: str, last_name: str, email: str, phone: str
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
             """
-            INSERT INTO referees (id)
+            INSERT INTO referees (person_id)
             VALUES (%s)
-            RETURNING id
+            RETURNING person_id
             """,
             (person_info["id"],),
         )
