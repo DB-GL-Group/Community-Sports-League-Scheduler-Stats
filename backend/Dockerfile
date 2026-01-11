@@ -10,7 +10,9 @@ RUN pip install --no-cache-dir fastapi  "uvicorn[standard]" \
                                         "psycopg_pool[binary]" \
                                         "pydantic[email]" \
                                         "passlib[argon2]" \
-                                        "PyJWT"
+                                        "PyJWT" \
+                                        "rq" \
+                                        "redis"
 
 COPY . /app
 

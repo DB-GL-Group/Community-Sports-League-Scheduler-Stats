@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from shared.db import close_async_pool, get_async_cursor, open_async_pool
 
 from .routers.auth import router as auth_router
+from .routers.scheduler import router as scheduler_router
 
 
 logger = logging.getLogger(__name__)
@@ -24,11 +25,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Sports League API", lifespan=lifespan)
 
 app.include_router(auth_router)
+#app.include_router(scheduler_router)
 
-# CORS: ouvrir aux frontends locaux (à adapter pour la prod)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # restreindre à vos domaines en prod
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

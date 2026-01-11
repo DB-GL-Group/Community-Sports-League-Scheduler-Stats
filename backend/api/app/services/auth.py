@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 import jwt
 from passlib.hash import argon2
 
-from ..repositories import users as repo
+from shared import users as repo
 
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")

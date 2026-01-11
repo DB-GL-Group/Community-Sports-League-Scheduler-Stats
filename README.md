@@ -72,7 +72,7 @@ cp .env.example .env # Modify variables if needed
 | Apply migrations | `make db-migrate` |
 | Check status | `make db-status` |
 | Stop the DB | `make db-stop` |
-| Delete data | `make remove-all`|
+| Delete data | `make db-remove-all`|
 | Reset (⚠️ deletes data) | `make db-reset` |
 
 

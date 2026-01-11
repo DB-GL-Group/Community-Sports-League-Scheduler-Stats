@@ -44,3 +44,8 @@ make backend-db-conn # Vérifie que le backend répond
   - `POST /auth/login` : retourne `access_token` (Bearer JWT) + info user.
   - `GET /auth/me` : nécessite `Authorization: Bearer <token>`, retourne l’utilisateur courant.
 - Intégration front: envoyer le token JWT dans l’en-tête `Authorization: Bearer <token>` sur chaque requête protégée; le backend vérifie le token et les rôles avant d’exécuter la logique.
+
+## Worker (RQ + Redis)
+- Demarrer les services: `docker compose up --build`
+- Lancer un job: `POST /schedule/run`
+- Suivre un job: `GET /schedule/{job_id}`

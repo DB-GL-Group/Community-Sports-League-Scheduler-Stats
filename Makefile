@@ -35,10 +35,15 @@ backend-start:
 
 backend-stop:
 	docker compose down backend
+	docker compose down redis
 
 backend-restart: 
 	backend-stop 
 	backend-start
+
+backend-reset:
+	docker compose down -v backend redis
+	docker compose up -d --build backend
 
 backend-db-conn:
 	curl http://localhost:8000/health

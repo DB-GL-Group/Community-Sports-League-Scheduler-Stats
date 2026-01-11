@@ -29,6 +29,13 @@ services:
       - ./db/migrations:/flyway/sql
     command: -locations=filesystem:/flyway/sql migrate
 
+  redis:
+    image: redis:7
+    container_name: sports-league-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
   backend:
     build:
       context: ./backend
@@ -37,15 +44,35 @@ services:
     restart: unless-stopped
     depends_on:
       - db
+      - redis
     env_file:
       - .env
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+      REDIS_URL: "redis://redis:6379/0"
     volumes:
       - ./backend:/app
     ports:
       - "8000:8000"
     command: uvicorn api.app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sports-league-worker
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+      REDIS_URL: "redis://redis:6379/0"
+    volumes:
+      - ./backend:/app
+    command: rq worker --url redis://redis:6379/0 scheduler
 
 
 volumes:
