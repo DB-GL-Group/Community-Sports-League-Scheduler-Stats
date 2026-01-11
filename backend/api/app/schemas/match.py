@@ -6,7 +6,6 @@ from pydantic import BaseModel
 class Match(BaseModel):
     id: int
     division: int
-    slot_id: int
     home_team_id: int
     away_team_id: int
     main_referee_id: int
@@ -14,6 +13,7 @@ class Match(BaseModel):
     home_score: Optional[int] = None
     away_score: Optional[int] = None
     notes: Optional[str] = None
+    slot_ids: Optional[list[int]] = None
 
 
 class MatchPreviewResponse(BaseModel):
@@ -24,7 +24,7 @@ class MatchPreviewResponse(BaseModel):
     away_team: str
     home_score: int
     away_score: int
-    start_time: str
+    start_time: Optional[str] = None
     home_primary_color: str
     home_secondary_color: str
     away_primary_color: str
@@ -39,7 +39,7 @@ class MatchResponse(BaseModel):
     away_team: str
     home_score: int
     away_score: int
-    start_time: str
+    start_time: Optional[str] = None
     current_time: str
     main_referee: str
     notes: str

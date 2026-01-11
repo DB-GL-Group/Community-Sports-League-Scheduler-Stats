@@ -174,8 +174,8 @@ async def list_referee_matches(current_user: UserResponse = Depends(require_role
             "home_score": row["home_score"],
             "away_score": row["away_score"],
             "start_time": row["start_time"].isoformat()
-            if hasattr(row["start_time"], "isoformat")
-            else str(row["start_time"]),
+            if row.get("start_time") and hasattr(row["start_time"], "isoformat")
+            else None,
         }
         for row in rows
     ]

@@ -67,10 +67,10 @@ CREATE TABLE slots (
     UNIQUE (court_id, start_time)
 );
 
+
 CREATE TABLE matches (
     id              SERIAL PRIMARY KEY,
     division        INTEGER NOT NULL,
-    slot_id         INTEGER NOT NULL UNIQUE REFERENCES slots(id),
     home_team_id    INTEGER NOT NULL REFERENCES teams(id),
     away_team_id    INTEGER NOT NULL REFERENCES teams(id),
     main_referee_id INTEGER REFERENCES referees(person_id),
@@ -79,6 +79,12 @@ CREATE TABLE matches (
     away_score      INTEGER,
     notes           TEXT,
     CONSTRAINT chk_match_teams_different CHECK (home_team_id <> away_team_id)
+);
+
+CREATE TABLE match_slot (
+    slot_id INTEGER NOT NULL REFERENCES slots(id),
+    match_id INTEGER NOT NULL REFERENCES matches(id),
+    PRIMARY KEY (slot_id, match_id)
 );
 
 CREATE TABLE match_referees (

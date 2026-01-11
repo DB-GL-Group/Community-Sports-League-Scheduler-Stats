@@ -22,8 +22,8 @@ async def list_match_previews():
             "home_score": row["home_score"],
             "away_score": row["away_score"],
             "start_time": row["start_time"].isoformat()
-            if hasattr(row["start_time"], "isoformat")
-            else str(row["start_time"]),
+            if row.get("start_time") and hasattr(row["start_time"], "isoformat")
+            else None,
             "home_primary_color": row["home_primary_color"],
             "home_secondary_color": row["home_secondary_color"],
             "away_primary_color": row["away_primary_color"],
@@ -46,8 +46,8 @@ async def get_match_details(match_id: int, current_user: UserResponse = Depends(
         "home_score": row["home_score"],
         "away_score": row["away_score"],
         "start_time": row["start_time"].isoformat()
-        if hasattr(row["start_time"], "isoformat")
-        else str(row["start_time"]),
+        if row.get("start_time") and hasattr(row["start_time"], "isoformat")
+        else None,
         "current_time": row["current_time"].isoformat()
         if hasattr(row["current_time"], "isoformat")
         else str(row["current_time"]),

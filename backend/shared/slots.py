@@ -18,3 +18,4 @@ async def add_slot(court_id, start_time, end_time):
             return {}
         return {"id": slot[0], "court_id": slot[1], "start_time": slot[2], "end_time": slot[3]}
     
+    

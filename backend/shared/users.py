@@ -1,6 +1,15 @@
+from enum import Enum
+from shared.managers import create_manager
+from shared.referees import create_referee
+from shared.admins import create_admin
 from shared.db import get_async_pool
 from shared.persons import create_person
 
+class UserRoles(str, Enum):
+    MANAGER = "MANAGER"
+    FAN = "FAN"
+    REFEREE = "REFEREE"
+    ADMIN = "ADMIN"
 
 async def get_user_by_email(email: str):
     pool = get_async_pool()
@@ -93,6 +102,13 @@ async def create_user(
     roles: list[str],
 ):
     person = await create_person(first_name, last_name, phone)
+    match roles:
+        case UserRoles.MANAGER.value:
+            await create_manager(person["id"])
+        case UserRoles.REFEREE.value:
+            await create_referee(person["id"])
+        case UserRoles.ADMIN.value:
+            await create_admin(person["id"])
     pool = get_async_pool()
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
