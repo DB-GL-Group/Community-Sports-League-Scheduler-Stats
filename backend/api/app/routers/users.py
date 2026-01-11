@@ -22,7 +22,7 @@ from shared.referees import (
     remove_referee_availability,
     replace_referee_availability,
 )
-from shared.teams import create_team, get_team_by_manager_id
+from shared.teams import add_player, create_team, get_team_by_manager_id, remove_player_from_team
 from shared.fans import (
     add_favorite_team,
     add_player_subscription,
@@ -82,6 +82,37 @@ async def add_team(
         "color_primary": team[5],
         "color_secondary": team[6],
     }
+
+@router.post("/manager/team/players", status_code=status.HTTP_201_CREATED)
+async def add_team_player(
+    payload: PlayerIdRequest,
+    current_user: UserResponse = Depends(require_role("MANAGER")),
+):
+    if not current_user.get("person_id"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Manager profile missing")
+    team = await get_team_by_manager_id(current_user["person_id"])
+    if not team:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+    row = await add_player(payload.player_id, team[0])
+    if not row:
+        return {"status": "exists"}
+    return {"status": "created"}
+
+
+@router.delete("/manager/team/players/{player_id}")
+async def remove_team_player(
+    player_id: int,
+    current_user: UserResponse = Depends(require_role("MANAGER")),
+):
+    if not current_user.get("person_id"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Manager profile missing")
+    team = await get_team_by_manager_id(current_user["person_id"])
+    if not team:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+    row = await remove_player_from_team(player_id, team[0])
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Player not found in team")
+    return {"status": "deleted"}
 
 #=========== REFEREE ===========#
 @router.get("/referee/availability", response_model=list[RefereeAvailabilityResponse])

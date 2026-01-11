@@ -49,6 +49,7 @@ async def add_player(player_id, team_id):
             """
             INSERT INTO player_team (player_id, team_id)
             VALUES (%s, %s)
+            ON CONFLICT DO NOTHING
             RETURNING player_id, team_id, shirt_number, active
             """,
             (player_id, team_id),
@@ -56,3 +57,19 @@ async def add_player(player_id, team_id):
         player_team = await cur.fetchone()
         await conn.commit()
         return player_team
+
+
+async def remove_player_from_team(player_id, team_id):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            DELETE FROM player_team
+            WHERE player_id = %s AND team_id = %s
+            RETURNING player_id, team_id
+            """,
+            (player_id, team_id),
+        )
+        row = await cur.fetchone()
+        await conn.commit()
+        return row
