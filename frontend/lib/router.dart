@@ -18,6 +18,7 @@ class ApiRouter {
         headers: {"Content-Type": "application/json", "Authorization": "Bearer ${token}"},
         body: json.encode(body)
       ),
+      'DELETE' => await http.delete(Uri.parse('$baseUrl/$endpoint')),
       String() => throw UnimplementedError(),
     };
     print("statusCode: ${response.statusCode}");

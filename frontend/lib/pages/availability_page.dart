@@ -32,7 +32,7 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
     // try {
     //   final slotData = await apiRouter.fetchData("slots/available");
     //   final availabilityData = await apiRouter.fetchData("user/referee/availability");
-    //   for (Map<String, dynamic> slotJson in slotData['body']) {
+    //   for (var slotJson in slotData['body']) {
     //     slots.add(om.Slot.fromJson(slotJson));
     //   }
     //   for (var slotJson in availabilityData['body']) {
@@ -41,7 +41,7 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
     //     _selectedSlotIds.add(slot.id); // pre-select
     //   }
     // } catch (e) {
-    //   print(e.toString());
+    //   print("Error loading slots: $e");
     // } finally {
     //   return Future.value([...slots, ...existing]);
     // }
