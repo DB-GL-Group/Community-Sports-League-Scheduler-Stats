@@ -40,7 +40,7 @@ async def run_schedule():
             )
         existing_job.delete()
 
-    job = queue.enqueue(run_scheduler_job, SCHEDULER_JOB_ID, job_id=SCHEDULER_JOB_ID)
+    job = queue.enqueue(run_scheduler_job(1)), SCHEDULER_JOB_ID, job_id=SCHEDULER_JOB_ID)
     return {"job_id": job.id, "status": "queued"}
 
 

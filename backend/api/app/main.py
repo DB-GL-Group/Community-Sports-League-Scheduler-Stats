@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Sports League API", lifespan=lifespan)
 
 app.include_router(auth_router)
-#app.include_router(scheduler_router)
+app.include_router(scheduler_router)
 
 app.add_middleware(
     CORSMiddleware,
