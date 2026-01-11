@@ -17,3 +17,92 @@ async def create_referee(first_name: str, last_name: str, email: str, phone: str
         referee_id = await cur.fetchone()
         await conn.commit()
         return {"id": referee_id[0]}
+
+
+async def get_referee_availability(referee_id: int):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT s.id, s.court_id, s.start_time, s.end_time
+            FROM ref_dispos rd
+            JOIN slots s ON s.id = rd.slot_id
+            WHERE rd.referee_id = %s
+            ORDER BY s.start_time
+            """,
+            (referee_id,),
+        )
+        return await cur.fetchall()
+
+
+async def add_referee_availability(referee_id: int, slot_id: int):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            INSERT INTO ref_dispos (referee_id, slot_id)
+            VALUES (%s, %s)
+            ON CONFLICT DO NOTHING
+            RETURNING referee_id, slot_id
+            """,
+            (referee_id, slot_id),
+        )
+        row = await cur.fetchone()
+        await conn.commit()
+        return row
+
+
+async def remove_referee_availability(referee_id: int, slot_id: int):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            DELETE FROM ref_dispos
+            WHERE referee_id = %s AND slot_id = %s
+            RETURNING referee_id, slot_id
+            """,
+            (referee_id, slot_id),
+        )
+        row = await cur.fetchone()
+        await conn.commit()
+        return row
+
+
+async def replace_referee_availability(referee_id: int, slot_ids: list[int]):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute("DELETE FROM ref_dispos WHERE referee_id = %s", (referee_id,))
+        if slot_ids:
+            await cur.executemany(
+                "INSERT INTO ref_dispos (referee_id, slot_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                [(referee_id, slot_id) for slot_id in slot_ids],
+            )
+        await conn.commit()
+        return {"referee_id": referee_id, "count": len(slot_ids)}
+
+
+async def get_referee_matches(referee_id: int):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT DISTINCT ON (m.id)
+                   m.id,
+                   m.division,
+                   m.status,
+                   ht.name AS home_team,
+                   at.name AS away_team,
+                   COALESCE(m.home_score, 0) AS home_score,
+                   COALESCE(m.away_score, 0) AS away_score,
+                   s.start_time
+            FROM matches m
+            JOIN teams ht ON ht.id = m.home_team_id
+            JOIN teams at ON at.id = m.away_team_id
+            JOIN slots s ON s.id = m.slot_id
+            LEFT JOIN match_referees mr ON mr.match_id = m.id
+            WHERE m.main_referee_id = %s OR mr.referee_id = %s
+            ORDER BY m.id, s.start_time
+            """,
+            (referee_id, referee_id),
+        )
+        return await cur.fetchall()

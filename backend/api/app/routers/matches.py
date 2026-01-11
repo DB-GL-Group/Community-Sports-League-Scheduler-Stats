@@ -26,7 +26,7 @@ async def list_match_previews():
         for row in rows
     ]
 
-@router.get("/id", response_model=MatchResponse)
+@router.get("/{match_id}", response_model=MatchResponse)
 async def get_match_details(match_id: int, current_user: UserResponse = Depends(get_current_user)):
     row = await fetch_match_details(match_id)
     if not row:

@@ -1,4 +1,4 @@
-# Backend README
+﻿# Backend README
 
 ## Setup
 1) **Modifier les variables dans .env** 
@@ -27,12 +27,47 @@ make backend-db-conn # Vérifie que le backend répond
   - **Signup**: `curl.exe -X POST http://localhost:8000/auth/signup -H "Content-Type: application/json" -d '{"email":"user@example.com","password":"test123","roles":["FAN"]}'`
   - **Login**: `curl.exe -X POST http://localhost:8000/auth/login -H "Content-Type: application/json" -d '{"email":"user@example.com","password":"test123"}'`
   - **Profil protégé**: `curl.exe http://localhost:8000/auth/me -H "Authorization: Bearer <token>"`
-  - **Match details (protected)**: `curl.exe "http://localhost:8000/matches/id?match_id=1" -H "Authorization: Bearer <token>"`
+  - **Match details (protected)**: `curl.exe "http://localhost:8000/matches/1" -H "Authorization: Bearer <token>"`
 
 ## Auth header (Thunder Client)
 - Add a header:
   - Key: `Authorization`
   - Value: `Bearer <token>`
+
+## Endpoints
+- Public:
+  - `GET /health`
+  - `GET /matches/previews`
+- Auth:
+  - `POST /auth/signup`
+  - `POST /auth/login`
+  - `GET /auth/me` (auth)
+- Matches:
+  - `GET /matches/{match_id}` (auth)
+- Scheduler:
+  - `POST /scheduler/run`
+  - `GET /scheduler/status`
+- User (manager):
+  - `GET /user/manager/team` (role MANAGER)
+  - `POST /user/manager/team` (role MANAGER)
+- User (referee):
+  - `GET /user/referee/availability` (role REFEREE)
+  - `POST /user/referee/availability` (role REFEREE)
+  - `PUT /user/referee/availability` (role REFEREE)
+  - `DELETE /user/referee/availability/{slot_id}` (role REFEREE)
+  - `GET /user/referee/matches` (role REFEREE)
+- User (fan):
+  - `GET /user/favorites/teams` (role FAN+)
+  - `POST /user/favorites/teams` (role FAN+)
+  - `DELETE /user/favorites/teams/{team_id}` (role FAN+)
+  - `GET /user/subscriptions/teams` (role FAN+)
+  - `POST /user/subscriptions/teams` (role FAN+)
+  - `DELETE /user/subscriptions/teams/{team_id}` (role FAN+)
+  - `GET /user/subscriptions/players` (role FAN+)
+  - `POST /user/subscriptions/players` (role FAN+)
+  - `DELETE /user/subscriptions/players/{player_id}` (role FAN+)
+  - `GET /user/notifications` (role FAN+)
+  - `PUT /user/notifications` (role FAN+)
 
 
 ## Backend-DB
@@ -55,5 +90,6 @@ make backend-db-conn # Vérifie que le backend répond
 - Demarrer les services: `docker compose up --build`
 - Lancer un job: `POST /scheduler/run`
 - Suivre un job: `GET /scheduler`
+
 
 

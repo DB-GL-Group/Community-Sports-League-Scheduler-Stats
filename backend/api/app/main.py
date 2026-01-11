@@ -9,6 +9,7 @@ from shared.db import close_async_pool, get_async_cursor, open_async_pool
 from .routers.auth import router as auth_router
 from .routers.scheduler import router as scheduler_router
 from .routers.matches import router as matches_router
+from .routers.users import router as users_router
 
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ app = FastAPI(title="Sports League API", lifespan=lifespan)
 app.include_router(auth_router)
 app.include_router(scheduler_router)
 app.include_router(matches_router)
+app.include_router(users_router)
 
 app.add_middleware(
     CORSMiddleware,
