@@ -23,10 +23,16 @@ make backend-db-conn # Vérifie que le backend répond
 ```
 
 ## Exemples de requêtes (frontend ou curl)
-  - **Health**: `curl http://localhost:8000/health`
-  - **Signup**: `curl -X POST http://localhost:8000/auth/signup -H "Content-Type: application/json" -d '{"email":"user@example.com","password":"test123","roles":["FAN"]}'`
-  - **Login**: `curl -X POST http://localhost:8000/auth/login -H "Content-Type: application/json" -d '{"email":"user@example.com","password":"test123"}'`
-  - **Profil protégé**: `curl http://localhost:8000/auth/me -H "Authorization: Bearer <token>"`
+  - **Health**: `curl.exe http://localhost:8000/health`
+  - **Signup**: `curl.exe -X POST http://localhost:8000/auth/signup -H "Content-Type: application/json" -d '{"email":"user@example.com","password":"test123","roles":["FAN"]}'`
+  - **Login**: `curl.exe -X POST http://localhost:8000/auth/login -H "Content-Type: application/json" -d '{"email":"user@example.com","password":"test123"}'`
+  - **Profil protégé**: `curl.exe http://localhost:8000/auth/me -H "Authorization: Bearer <token>"`
+  - **Match details (protected)**: `curl.exe "http://localhost:8000/matches/id?match_id=1" -H "Authorization: Bearer <token>"`
+
+## Auth header (Thunder Client)
+- Add a header:
+  - Key: `Authorization`
+  - Value: `Bearer <token>`
 
 
 ## Backend-DB
@@ -49,3 +55,5 @@ make backend-db-conn # Vérifie que le backend répond
 - Demarrer les services: `docker compose up --build`
 - Lancer un job: `POST /scheduler/run`
 - Suivre un job: `GET /scheduler`
+
+
