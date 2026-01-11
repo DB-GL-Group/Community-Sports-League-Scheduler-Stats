@@ -31,19 +31,18 @@ db-status:
 
 # Backend management
 backend-start:
-	docker compose up -d --build backend
+	docker compose up -d --build backend worker
 
 backend-stop:
-	docker compose down backend
-	docker compose down redis
+	docker compose down backend redis worker
 
 backend-restart: 
 	backend-stop 
 	backend-start
 
 backend-reset:
-	docker compose down -v backend redis
-	docker compose up -d --build backend
+	docker compose down -v backend redis worker
+	docker compose up -d --build backend worker
 
 backend-db-conn:
 	curl http://localhost:8000/health
