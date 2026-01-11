@@ -80,3 +80,27 @@ class Team {
     );
   }
 }
+
+
+class Slot {
+  final int id;
+  final String court;
+  final DateTime startTime;
+  final DateTime endTime;
+
+  Slot({
+    required this.id,
+    required this.court,
+    required this.startTime,
+    required this.endTime,
+  });
+
+  factory Slot.fromJson(Map<String, dynamic> json) {
+    return Slot(
+      id: json['id'] as int,
+      court: json['court'] as String,
+      startTime: DateTime.parse(json['start_time'] as String),
+      endTime: DateTime.parse(json['end_time'] as String),
+    );
+  }
+}
