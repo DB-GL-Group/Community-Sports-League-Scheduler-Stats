@@ -50,3 +50,13 @@ backend-db-conn:
 # Flutter setup
 flutter-setup:
 	powershell -NoProfile -ExecutionPolicy Bypass -File scripts/flutter-setup.ps1
+
+# Some test requests
+test-signup:
+	powershell -NoProfile -Command "$$email = $$env:TEST_EMAIL; if (-not $$email) { $$email = 'test.user@example.com' }; $$password = $$env:TEST_PASSWORD; if (-not $$password) { $$password = 'test123' }; $$body = @{ email = $$email; password = $$password; roles = @('FAN') } | ConvertTo-Json; Invoke-RestMethod -Method Post -Uri http://localhost:8000/auth/signup -ContentType 'application/json' -Body $$body | ConvertTo-Json -Depth 5"
+
+test-login:
+	powershell -NoProfile -Command "$$email = $$env:TEST_EMAIL; if (-not $$email) { $$email = 'test.user@example.com' }; $$password = $$env:TEST_PASSWORD; if (-not $$password) { $$password = 'test123' }; $$body = @{ email = $$email; password = $$password } | ConvertTo-Json; Invoke-RestMethod -Method Post -Uri http://localhost:8000/auth/login -ContentType 'application/json' -Body $$body | ConvertTo-Json -Depth 5"
+
+test-auth:
+	powershell -NoProfile -Command "$$email = $$env:TEST_EMAIL; if (-not $$email) { $$email = 'test.user@example.com' }; $$password = $$env:TEST_PASSWORD; if (-not $$password) { $$password = 'test123' }; $$body = @{ email = $$email; password = $$password } | ConvertTo-Json; $$login = Invoke-RestMethod -Method Post -Uri http://localhost:8000/auth/login -ContentType 'application/json' -Body $$body; $$token = $$login.access_token; Invoke-RestMethod -Method Get -Uri http://localhost:8000/auth/me -Headers @{ Authorization = \"Bearer $$token\" } | ConvertTo-Json -Depth 5"
