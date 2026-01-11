@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..dependencies.auth import get_current_user
-from ..schemas.auth import LoginRequest, SignupRequest, TokenResponse, UserResponse
+from ..schemas.auth import LoginRequest, SignupRequest, TokenResponse, UserResponse, UserWithPersonResponse
+from shared.persons import get_person
 from ..services import auth as auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -31,6 +32,9 @@ async def login(payload: LoginRequest):
         raise HTTPException(status_code=400, detail=str(exc))
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me", response_model=UserWithPersonResponse)
 async def me(current_user: UserResponse = Depends(get_current_user)):
-    return current_user
+    person = None
+    if current_user.get("person_id"):
+        person = await get_person(current_user["person_id"])
+    return {"user": current_user, "person": person or None}

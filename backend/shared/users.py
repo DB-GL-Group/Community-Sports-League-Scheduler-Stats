@@ -6,7 +6,11 @@ async def get_user_by_email(email: str):
     pool = get_async_pool()
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
-            "SELECT id, email, is_active, created_at, person_id FROM users WHERE email=%s",
+            """
+            SELECT id, email, is_active, created_at, person_id
+            FROM users
+            WHERE email = %s
+            """,
             (email,),
         )
         row = await cur.fetchone()
@@ -33,7 +37,7 @@ async def get_user_by_id_with_roles(user_id: int):
             LEFT JOIN user_roles ur ON ur.user_id = u.id
             LEFT JOIN roles r ON r.id = ur.role_id
             WHERE u.id = %s
-            GROUP BY u.id
+            GROUP BY u.id, u.email
             """,
             (user_id,),
         )
@@ -88,7 +92,7 @@ async def create_user(
     password_hash: str,
     roles: list[str],
 ):
-    person = await create_person(first_name, last_name, email, phone)
+    person = await create_person(first_name, last_name, phone)
     pool = get_async_pool()
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(

@@ -76,7 +76,14 @@ async def login(email: str, password: str):
         "person_id": user.get("person_id"),
         "roles": user.get("roles", []),
     }
-    token = create_access_token(user_dict)
+    token = create_access_token(
+        {
+            "id": user["id"],
+            "email": user["email"],
+            "person_id": user.get("person_id"),
+            "roles": user.get("roles", []),
+        }
+    )
     return {"access_token": token, "token_type": "bearer", "user": user_dict}
 
 

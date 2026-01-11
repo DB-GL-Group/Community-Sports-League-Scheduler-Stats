@@ -26,6 +26,18 @@ class UserResponse(BaseModel):
     person_id: int | None = None
 
 
+class PersonResponse(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    phone: str | None = None
+
+
+class UserWithPersonResponse(BaseModel):
+    user: UserResponse
+    person: PersonResponse | None = None
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

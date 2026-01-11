@@ -39,15 +39,9 @@ async def _run_scheduler_job(job_id: str) -> None:
         finals_slot = (await add_slot(court2, currentTime + 13 * oneHour, currentTime + 14 * oneHour))["id"]
 
         # Managers
-        JohnDoeManager_id = (
-            await create_manager("John", "Doe", "johndoe@gmail.com", "+41 123 123 12")
-        )["id"]
-        JaneDoughManager_id = (
-            await create_manager("Jane", "Dough", "janedouch@gmail.com", "+41 321 321 32")
-        )["id"]
-        JackDanielsManager_id = (
-            await create_manager("Jack", "Daniels", "jackdaniels@gmail.com", "+41 145 145 45")
-        )["id"]
+        JohnDoeManager_id = (await create_manager("John", "Doe", "+41 123 123 12"))["id"]
+        JaneDoughManager_id = (await create_manager("Jane", "Dough", "+41 321 321 32"))["id"]
+        JackDanielsManager_id = (await create_manager("Jack", "Daniels", "+41 145 145 45"))["id"]
         
         # # Teams
         home_team_id = (await create_team(division, "The flightless sharks", JohnDoeManager_id, "FLS", "Blue", "White"))["id"]
@@ -55,17 +49,15 @@ async def _run_scheduler_job(job_id: str) -> None:
         away_team2_id = (await create_team(division, "The flexible rocks", JackDanielsManager_id, "TFR", "Grey", "LightGrey"))["id"]
 
         # Players
-        player1 = await create_player("Mark", "Evans", "markevans@gmail.com", "+41 890 890 90")
-        player2 = await create_player("Axel", "Blaze", "axelblaze@gmail.com", "+41 098 098 09")
-        player3 = await create_player("Ubi", "Soft", "ubisoft@gmail.com", "+41 685 752 65")
+        player1 = await create_player("Mark", "Evans", "+41 890 890 90")
+        player2 = await create_player("Axel", "Blaze", "+41 098 098 09")
+        player3 = await create_player("Ubi", "Soft", "+41 685 752 65")
         await add_player(player1["id"], home_team_id)
         await add_player(player2["id"], away_team1_id)
         await add_player(player3["id"], away_team2_id)
 
         # Matches
-        ref_id = (await create_referee("Reeses", "Puffs", "reesespuffs@gmail.com", "+12 456 456 45"))[
-            "id"
-        ]
+        ref_id = (await create_referee("Reeses", "Puffs", "+12 456 456 45"))["id"]
 
         match1 = await add_match(division, slot1, home_team_id, away_team1_id, ref_id, "Active")
         match2 = await add_match(division, slot2, home_team_id, away_team2_id, ref_id, "Awaiting")
