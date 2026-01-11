@@ -1,3 +1,4 @@
+import 'package:community_sports_league_scheduler/object_models.dart';
 import 'package:community_sports_league_scheduler/router.dart';
 import 'package:flutter/material.dart';
 
@@ -22,7 +23,7 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final data = await apiRouter.fetchData("auth/me");
-      user = User.fromJson(data);
+      user = User.fromJson(data['user'], data['access_token']);
     } catch (e) {
       error = e.toString();
     } finally {
@@ -34,31 +35,5 @@ class AuthProvider extends ChangeNotifier {
   void signOut() {
     user = null;
     notifyListeners();
-  }
-}
-
-class User {
-  int id;
-  String email;
-  bool is_active;
-  DateTime created_at;
-  List<String> roles;
-
-  User({
-    required this.id,
-    required this.email,
-    required this.is_active,
-    required this.created_at,
-    required this.roles
-  });
-
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'] as int,
-      email: json['email'] as String,
-      is_active: json['is_active'] as bool,
-      created_at: DateTime.parse(json['created_at'] as String),
-      roles: List<String>.from(json['roles'])
-    );
   }
 }

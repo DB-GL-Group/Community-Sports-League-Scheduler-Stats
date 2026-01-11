@@ -141,7 +141,11 @@ async def get_match_previews():
                    at.name AS away_team,
                    COALESCE(m.home_score, 0) AS home_score,
                    COALESCE(m.away_score, 0) AS away_score,
-                   s.start_time
+                   s.start_time,
+                   ht.color_primary AS home_primary_color,
+                   ht.color_secondary AS home_secondary_color,
+                   at.color_primary AS away_primary_color,
+                   at.color_secondary AS away_secondary_color
             FROM matches m
             JOIN teams ht ON ht.id = m.home_team_id
             JOIN teams at ON at.id = m.away_team_id

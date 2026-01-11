@@ -22,6 +22,10 @@ async def list_match_previews():
             "home_score": row[5],
             "away_score": row[6],
             "start_time": row[7].isoformat() if hasattr(row[7], "isoformat") else str(row[7]),
+            "home_primary_color": row[8],
+            "home_secondary_color": row[9],
+            "away_primary_color": row[10],
+            "away_secondary_color": row[11],
         }
         for row in rows
     ]

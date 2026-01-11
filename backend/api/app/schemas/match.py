@@ -25,6 +25,10 @@ class MatchPreviewResponse(BaseModel):
     home_score: int
     away_score: int
     start_time: str
+    home_primary_color: str
+    home_secondary_color: str
+    away_primary_color: str
+    away_secondary_color: str
 
 
 class MatchResponse(BaseModel):
