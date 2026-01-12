@@ -2,7 +2,7 @@ from enum import Enum
 from datetime import datetime
 
 from shared.db import get_async_pool
-from shared.teams import get_all_teams_id
+from shared.teams import get_all_teams_id, get_team_details
 
 import random
 
@@ -22,7 +22,6 @@ async def get_all_matches():
                    m.division,
                    m.home_team_id,
                    m.away_team_id,
-                   m.main_referee_id,
                    m.status,
                    m.home_score,
                    m.away_score,
@@ -40,12 +39,11 @@ async def get_all_matches():
                 "division": row[1],
                 "home_team_id": row[2],
                 "away_team_id": row[3],
-                "main_referee_id": row[4],
-                "status": row[5],
-                "home_score": row[6],
-                "away_score": row[7],
-                "notes": row[8],
-                "slot_ids": list(row[9]) if row[9] is not None else [],
+                "status": row[4],
+                "home_score": row[5],
+                "away_score": row[6],
+                "notes": row[7],
+                "slot_ids": list(row[8]) if row[8] is not None else [],
             }
             for row in rows
         ]
@@ -59,7 +57,6 @@ async def get_match_by_id(match_id: int):
                    m.division,
                    m.home_team_id,
                    m.away_team_id,
-                   m.main_referee_id,
                    m.status,
                    m.home_score,
                    m.away_score,
@@ -80,12 +77,11 @@ async def get_match_by_id(match_id: int):
             "division": row[1],
             "home_team_id": row[2],
             "away_team_id": row[3],
-            "main_referee_id": row[4],
-            "status": row[5],
-            "home_score": row[6],
-            "away_score": row[7],
-            "notes": row[8],
-            "slot_ids": list(row[9]) if row[9] is not None else [],
+            "status": row[4],
+            "home_score": row[5],
+            "away_score": row[6],
+            "notes": row[7],
+            "slot_ids": list(row[8]) if row[8] is not None else [],
         }
 
 async def get_matches_at_time(date_time: datetime):
@@ -97,7 +93,6 @@ async def get_matches_at_time(date_time: datetime):
                    m.division,
                    m.home_team_id,
                    m.away_team_id,
-                   m.main_referee_id,
                    m.status,
                    m.home_score,
                    m.away_score,
@@ -107,7 +102,7 @@ async def get_matches_at_time(date_time: datetime):
             JOIN match_slot ms ON ms.match_id = m.id
             JOIN slots s ON s.id = ms.slot_id
             WHERE s.start_time <= %s AND s.end_time >= %s
-            GROUP BY m.id, m.division, m.home_team_id, m.away_team_id, m.main_referee_id,
+            GROUP BY m.id, m.division, m.home_team_id, m.away_team_id,
                      m.status, m.home_score, m.away_score, m.notes
             """,
             (date_time, date_time),
@@ -119,12 +114,11 @@ async def get_matches_at_time(date_time: datetime):
                 "division": row[1],
                 "home_team_id": row[2],
                 "away_team_id": row[3],
-                "main_referee_id": row[4],
-                "status": row[5],
-                "home_score": row[6],
-                "away_score": row[7],
-                "notes": row[8],
-                "slot_ids": list(row[9]) if row[9] is not None else [],
+                "status": row[4],
+                "home_score": row[5],
+                "away_score": row[6],
+                "notes": row[7],
+                "slot_ids": list(row[8]) if row[8] is not None else [],
             }
             for row in rows
         ]
@@ -134,7 +128,6 @@ async def add_match(
     division,
     home_team_id,
     away_team_id,
-    main_referee_id,
     status,
     home_score=0,
     away_score=0,
@@ -146,18 +139,17 @@ async def add_match(
         await cur.execute(
             """
             INSERT INTO matches (
-                division, home_team_id, away_team_id, main_referee_id,
+                division, home_team_id, away_team_id,
                 status, home_score, away_score, notes
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            RETURNING id, division, home_team_id, away_team_id, main_referee_id,
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, division, home_team_id, away_team_id,
                       status, home_score, away_score, notes
             """,
             (
                 division,
                 home_team_id,
                 away_team_id,
-                main_referee_id,
                 status,
                 home_score,
                 away_score,
@@ -182,11 +174,10 @@ async def add_match(
             "division": match_row[1],
             "home_team_id": match_row[2],
             "away_team_id": match_row[3],
-            "main_referee_id": match_row[4],
-            "status": match_row[5],
-            "home_score": match_row[6],
-            "away_score": match_row[7],
-            "notes": match_row[8],
+            "status": match_row[4],
+            "home_score": match_row[5],
+            "away_score": match_row[6],
+            "notes": match_row[7],
             "slot_ids": [slot_id] if slot_id is not None else [],
         }
 
@@ -298,8 +289,8 @@ async def get_match_details(match_id: int):
             SELECT m.id,
                    m.division,
                    m.status,
-                   ht.name AS home_team,
-                   at.name AS away_team,
+                   ht.id AS home_team_id,
+                   at.id AS away_team_id,
                    COALESCE(m.home_score, 0) AS home_score,
                    COALESCE(m.away_score, 0) AS away_score,
                    MIN(s.start_time) AS start_time,
@@ -311,7 +302,8 @@ async def get_match_details(match_id: int):
             JOIN teams at ON at.id = m.away_team_id
             LEFT JOIN match_slot ms ON ms.match_id = m.id
             LEFT JOIN slots s ON s.id = ms.slot_id
-            LEFT JOIN persons p ON p.id = m.main_referee_id
+            LEFT JOIN match_referees mr ON mr.match_id = m.match_id
+            LEFT JOIN persons p ON p.id = mr.referee_id
             WHERE m.id = %s
             GROUP BY m.id, m.division, m.status, m.home_score, m.away_score, m.notes,
                      ht.name, at.name, p.first_name, p.last_name
@@ -321,17 +313,20 @@ async def get_match_details(match_id: int):
         row = await cur.fetchone()
         if not row:
             return {}
+        
+        ht_details = get_team_details(row[3])
+        at_details = get_team_details(row[4])
         return {
             "id": row[0],
             "division": row[1],
             "status": row[2],
-            "home_team": row[3],
-            "away_team": row[4],
+            "home_team": ht_details,
+            "away_team": at_details,
             "home_score": row[5],
             "away_score": row[6],
             "start_time": row[7],
             "current_time": row[8],
-            "main_referee": row[9],
+            "referee_name": row[9],
             "notes": row[10],
         }
 

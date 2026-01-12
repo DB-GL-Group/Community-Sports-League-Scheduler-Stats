@@ -39,6 +39,32 @@ async def get_all_valid_teams(min_players: int = 11):
             }
             for row in rows
         ]
+    
+async def get_team_details(team_id: int):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT id, division, name, manager_id, short_name, color_primary, color_secondary
+            FROM teams
+            WHERE id = %s
+            """,
+            (team_id)
+        )
+        row = await cur.fetchone()
+        if not row: 
+            return {}
+        players = await list_team_players(team_id)
+        return {
+            "id": row[0],
+            "division": row[1],
+            "name": row[2],
+            "manager_id": row[3],
+            "short_name": row[4],
+            "color_primary": row[5],
+            "color_secondary": row[6],
+            "players": players
+        }
 
 
 async def get_team_by_manager_id(manager_id: int):
