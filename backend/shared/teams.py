@@ -1,4 +1,5 @@
 from shared.db import get_async_pool
+from shared.matches import get_match_details
 
 async def get_all_teams_id():
     pool = get_async_pool()
@@ -64,7 +65,27 @@ async def get_team_by_manager_id(manager_id: int):
             "color_primary": row[5],
             "color_secondary": row[6],
         }
-
+    
+async def get_team_ID_by_name(team_name: int):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT id
+            FROM teams
+            WHERE name = %s
+            """,
+            (team_name,),
+        )
+        row = await cur.fetchone()
+        if not row:
+            return {}
+        return {"id": row}
+    
+async def get_home_and_away_teams_from_match_id(match_id):
+    home_team_id = (await get_team_ID_by_name((await get_match_details(match_id))["home_team"]))["id"]
+    away_team_id = (await get_team_ID_by_name((await get_match_details(match_id))["away_team"]))["id"]
+    return [home_team_id, away_team_id]
 
 async def create_team(division, name, manager_id, short_name, color_primary, color_secondary):
     pool = get_async_pool()

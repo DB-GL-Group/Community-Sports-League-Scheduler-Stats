@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from shared.courts import add_court
 from shared.db import close_async_pool, open_async_pool
 from shared.managers import create_manager
-from shared.matches import addScore, add_match, get_all_matches, get_finalists
+from shared.matches import addScore, add_match, get_all_matches
 from shared.players import create_player
 from shared.referees import create_referee
 from shared.teams import add_player, create_team
@@ -23,6 +23,12 @@ from shared.courts import generate_slots
 async def generate_matches(): # return us all of the matches
     await open_async_pool()
     try:
+        # Rules
+        # 1. A player cannot play in a match, in which he is in both teams.
+
+        
+
+
         # Teams are created and managed by managers
         home_team_id = (await create_team(division, "The flightless sharks", JohnDoeManager_id, "FLS", "Blue", "White"))["id"]
         away_team1_id = (await create_team(division, "The Thirsty Fish", JaneDoughManager_id, "TTF", "Purple", "Yellow"))["id"]

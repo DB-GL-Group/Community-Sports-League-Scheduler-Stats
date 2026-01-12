@@ -30,12 +30,13 @@ async def get_all_courts():
             """
         )
         row = await cur.fetchall()
-        return {
+        return [{
             "id" : row[0],
             "venue_id" : row[1],
             "name" : row[2],
             "surface" : row[3]
-        }
+        } for row in row
+        ]
 
 async def generate_slots(court_id, start_date, end_date, slots_per_day=6, slots_length=2):
     if slots_per_day <= 0:
@@ -45,9 +46,7 @@ async def generate_slots(court_id, start_date, end_date, slots_per_day=6, slots_
     if slots_per_day * slots_length > 12:
         raise ValueError("total slots length cannot exceed 12 hours")
 
-    start_day = start_date.date() if isinstance(start_date, datetime) else start_date
-    end_day = end_date.date() if isinstance(end_date, datetime) else end_date
-    if end_day < start_day:
+    if end_date < start_date:
         raise ValueError("end_date must be on or after start_date")
 
     slot_delta = timedelta(hours=slots_length)
@@ -55,8 +54,8 @@ async def generate_slots(court_id, start_date, end_date, slots_per_day=6, slots_
     pool = get_async_pool()
     created = []
     async with pool.connection() as conn, conn.cursor() as cur:
-        current_day = start_day
-        while current_day <= end_day:
+        current_day = start_date
+        while current_day <= end_date:
             current_start = datetime.combine(
                 current_day, datetime.min.time(), tzinfo=timezone.utc
             ).replace(hour=8)
@@ -83,3 +82,4 @@ async def generate_slots(court_id, start_date, end_date, slots_per_day=6, slots_
             current_day += timedelta(days=1)
         await conn.commit()
     return created
+    return True

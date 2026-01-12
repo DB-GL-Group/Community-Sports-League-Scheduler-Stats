@@ -1,0 +1,1 @@
+# This assigns all the referees to the availabe matches.
