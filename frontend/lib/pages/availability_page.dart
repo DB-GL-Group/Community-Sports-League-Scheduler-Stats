@@ -1,3 +1,4 @@
+import 'package:community_sports_league_scheduler/authprovider.dart';
 import 'package:community_sports_league_scheduler/router.dart';
 import 'package:community_sports_league_scheduler/widgets/slotcard.dart';
 import 'package:community_sports_league_scheduler/widgets/template.dart';
@@ -27,33 +28,34 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
   }
 
   Future<List<om.Slot>> _loadSlotsAndAvailability(ApiRouter apiRouter) async {
-    // List<om.Slot> slots = [];
-    // List<om.Slot> existing = [];
-    // try {
-    //   final slotData = await apiRouter.fetchData("slots/available");
-    //   final availabilityData = await apiRouter.fetchData("user/referee/availability");
-    //   for (var slotJson in slotData['body']) {
-    //     slots.add(om.Slot.fromJson(slotJson));
-    //   }
-    //   for (var slotJson in availabilityData['body']) {
-    //     final slot = om.Slot.fromJson(slotJson);
-    //     existing.add(slot);
-    //     _selectedSlotIds.add(slot.id); // pre-select
-    //   }
-    // } catch (e) {
-    //   print("Error loading slots: $e");
-    // } finally {
-    //   return Future.value([...slots, ...existing]);
-    // }
-    _selectedSlotIds.add(2);
-    return [
-      om.Slot(id: 1, court: "Stade de Tourbillon", startTime: DateTime.parse('2025-12-07T18:00:00.356518Z'), endTime: DateTime.parse('2025-12-07T20:00:00.356518Z')),
-      om.Slot(id: 2, court: "Stade de la Tuilière", startTime: DateTime.parse('2025-12-07T18:00:00.356518Z'), endTime: DateTime.parse('2025-12-07T20:00:00.356518Z')),
-      om.Slot(id: 3, court: "Stockhorn Arena", startTime: DateTime.parse('2025-12-06T18:00:00.356518Z'), endTime: DateTime.parse('2025-12-06T20:00:00.356518Z')),
-      om.Slot(id: 4, court: "Stadion Letzigrund", startTime: DateTime.parse('2025-12-06T18:00:00.356518Z'), endTime: DateTime.parse('2025-12-06T20:00:00.356518Z')),
-      om.Slot(id: 5, court: "Kybunpark", startTime: DateTime.parse('2025-12-06T18:00:00.356518Z'), endTime: DateTime.parse('2025-12-06T20:00:00.356518Z')),
-      om.Slot(id: 6, court: "Schützenwiese", startTime: DateTime.parse('2025-12-07T18:00:00.356518Z'), endTime: DateTime.parse('2025-12-07T20:00:00.356518Z')),
-    ];
+    List<om.Slot> slots = [];
+    List<om.Slot> existing = [];
+    try {
+      final token = context.read<AuthProvider>().user?.access_token ?? '';
+      final slotData = await apiRouter.fetchData("user/referee/openslots", token: token);
+      final availabilityData = await apiRouter.fetchData("user/referee/availability", token: token);
+      for (var slotJson in slotData) {
+        slots.add(om.Slot.fromJson(slotJson));
+      }
+      for (var slotJson in availabilityData) {
+        final slot = om.Slot.fromJson(slotJson);
+        existing.add(slot);
+        _selectedSlotIds.add(slot.id); // pre-select
+      }
+    } catch (e) {
+      throw Exception("Error loading slots: $e");
+    } finally {
+      return Future.value([...slots, ...existing]);
+    }
+    // _selectedSlotIds.add(2);
+    // return [
+    //   om.Slot(id: 1, court: "Stade de Tourbillon", startTime: DateTime.parse('2025-12-07T18:00:00.356518Z'), endTime: DateTime.parse('2025-12-07T20:00:00.356518Z')),
+    //   om.Slot(id: 2, court: "Stade de la Tuilière", startTime: DateTime.parse('2025-12-07T18:00:00.356518Z'), endTime: DateTime.parse('2025-12-07T20:00:00.356518Z')),
+    //   om.Slot(id: 3, court: "Stockhorn Arena", startTime: DateTime.parse('2025-12-06T18:00:00.356518Z'), endTime: DateTime.parse('2025-12-06T20:00:00.356518Z')),
+    //   om.Slot(id: 4, court: "Stadion Letzigrund", startTime: DateTime.parse('2025-12-06T18:00:00.356518Z'), endTime: DateTime.parse('2025-12-06T20:00:00.356518Z')),
+    //   om.Slot(id: 5, court: "Kybunpark", startTime: DateTime.parse('2025-12-06T18:00:00.356518Z'), endTime: DateTime.parse('2025-12-06T20:00:00.356518Z')),
+    //   om.Slot(id: 6, court: "Schützenwiese", startTime: DateTime.parse('2025-12-07T18:00:00.356518Z'), endTime: DateTime.parse('2025-12-07T20:00:00.356518Z')),
+    // ];
   }
 
   Future<void> _refreshSlots() async {
@@ -64,17 +66,8 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
     });
   }
 
-  bool _overlaps(om.Slot a, om.Slot b) => a.startTime.isBefore(b.endTime) && b.startTime.isBefore(a.endTime);
-
   bool _isSelected(om.Slot slot) =>
       _selectedSlotIds.contains(slot.id);
-
-  bool _isDisabled(om.Slot slot, List<om.Slot> allSlots) {
-    return allSlots.any((selected) {
-      if (!_isSelected(selected)) return false;
-      return _overlaps(slot, selected);
-    });
-  }
 
   void _toggleSlot(om.Slot slot) {
     setState(() {
@@ -135,9 +128,8 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
                 itemBuilder: (context, index) {
                   final slot = slots[index];
                   final selected = _isSelected(slot);
-                  final disabled = !selected && _isDisabled(slot, slots);
 
-                  return SlotCard(slot: slot, selected: selected, disabled: disabled, onTap: () => _toggleSlot(slot));
+                  return SlotCard(slot: slot, selected: selected, disabled: false, onTap: () => _toggleSlot(slot));
                 },
               ),
             );
@@ -146,20 +138,22 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () async {
             // Send _selectedSlotIds to backend
-            // try {
-            //   await context.read<ApiRouter>().fetchData(
-            //     "user/referee/availability",
-            //     method: 'PUT',
-            //     body: {"slot_ids": _selectedSlotIds.toList()}
-            //   );
-            //   ScaffoldMessenger.of(context).showSnackBar(
-            //     const SnackBar(content: Text("Availability updated")),
-            //   );
-            // } catch (e) {
-            //   ScaffoldMessenger.of(context).showSnackBar(
-            //     const SnackBar(content: Text("Failed to update availability")),
-            //   );
-            // }
+            try {
+              final token = context.read<AuthProvider>().user?.access_token ?? '';
+              await context.read<ApiRouter>().fetchData(
+                "user/referee/availability",
+                method: 'PUT',
+                body: {"slot_ids": _selectedSlotIds.toList()},
+                token: token
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Availability updated")),
+              );
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Failed to update availability")),
+              );
+            }
           },
           label: const Text('Save'),
           icon: const Icon(Icons.save),

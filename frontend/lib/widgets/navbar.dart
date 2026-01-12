@@ -13,7 +13,7 @@ class NavBar extends StatelessWidget {
 
     List<Widget> navbarElements = [
       UserAccountsDrawerHeader(
-        accountName: Text(auth.isLoggedIn ? 'Unknown' : 'Anonymous'),
+        accountName: Text(auth.isLoggedIn ? "${auth.user!.first_name} ${auth.user!.last_name}" : 'Anonymous'),
         accountEmail: Text(auth.isLoggedIn ? auth.user!.email : ''),
         decoration: BoxDecoration(
           color: Color.fromARGB(255, 50, 50, 50)
@@ -68,7 +68,6 @@ class NavBar extends StatelessWidget {
         ListTile(
           leading: Icon(Icons.notifications),
           title: Text('Assignments'),
-          trailing: Text('2'),
           onTap: () => context.go('/assignments'),
         ),
         ListTile(
@@ -86,6 +85,11 @@ class NavBar extends StatelessWidget {
         ListTile(
           title: Text('Admin', style: TextStyle(fontWeight: FontWeight.bold)),
           contentPadding: EdgeInsets.only(left: 8),
+        ),
+        ListTile(
+          leading: Icon(Icons.monitor),
+          title: Text('Console'),
+          onTap: () => context.go('/admin/console'),
         ),
         ListTile(
           leading: Icon(Icons.vpn_key),

@@ -10,22 +10,17 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => user != null;
   bool hasRole(String role) => (user != null && user!.roles.contains(role.toUpperCase()));
 
-  void login(User user) {
-    this.user = user;
-    notifyListeners();
-  }
-
-  Future<void> loadUser(ApiRouter apiRouter) async {
+  Future<void> login(ApiRouter apiRouter, String access_token) async {
     if (user != null) return;
 
     isLoading = true;
     notifyListeners();
 
     try {
-      final data = await apiRouter.fetchData("auth/me");
-      user = User.fromJson(data['user'], data['access_token']);
+      final data = await apiRouter.fetchData("auth/me", token: access_token);
+      user = User.fromJson(data, access_token);
     } catch (e) {
-      error = e.toString();
+      throw Exception("Error loading user: $e");
     } finally {
       isLoading = false;
       notifyListeners();

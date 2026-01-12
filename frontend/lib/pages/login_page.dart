@@ -1,5 +1,4 @@
 import 'package:community_sports_league_scheduler/authprovider.dart';
-import 'package:community_sports_league_scheduler/object_models.dart';
 import 'package:community_sports_league_scheduler/router.dart';
 import 'package:community_sports_league_scheduler/widgets/template.dart';
 
@@ -110,8 +109,7 @@ class _LogInFormState extends State<LogInForm> {
                     "email":email!,
                     "password":password!
                   });
-                  final user = User.fromJson(data['user'], data['access_token']);
-                  context.read<AuthProvider>().login(user);
+                  context.read<AuthProvider>().login(context.read<ApiRouter>(), data['access_token']);
                   context.go('/');
                   
                 } catch (e) { // wrong credentials

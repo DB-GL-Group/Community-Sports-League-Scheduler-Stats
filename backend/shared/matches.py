@@ -2,7 +2,8 @@ from enum import Enum
 from datetime import datetime
 
 from shared.db import get_async_pool
-# from shared.teams import get_all_teams_id
+from shared.teams import get_all_teams_id, get_team_details
+from shared.rankings import update_rankings_for_division
 
 import random
 
@@ -22,7 +23,6 @@ async def get_all_matches():
                    m.division,
                    m.home_team_id,
                    m.away_team_id,
-                   m.main_referee_id,
                    m.status,
                    m.home_score,
                    m.away_score,
@@ -40,12 +40,11 @@ async def get_all_matches():
                 "division": row[1],
                 "home_team_id": row[2],
                 "away_team_id": row[3],
-                "main_referee_id": row[4],
-                "status": row[5],
-                "home_score": row[6],
-                "away_score": row[7],
-                "notes": row[8],
-                "slot_ids": list(row[9]) if row[9] is not None else [],
+                "status": row[4],
+                "home_score": row[5],
+                "away_score": row[6],
+                "notes": row[7],
+                "slot_ids": list(row[8]) if row[8] is not None else [],
             }
             for row in rows
         ]
@@ -59,7 +58,6 @@ async def get_match_by_id(match_id: int):
                    m.division,
                    m.home_team_id,
                    m.away_team_id,
-                   m.main_referee_id,
                    m.status,
                    m.home_score,
                    m.away_score,
@@ -80,12 +78,11 @@ async def get_match_by_id(match_id: int):
             "division": row[1],
             "home_team_id": row[2],
             "away_team_id": row[3],
-            "main_referee_id": row[4],
-            "status": row[5],
-            "home_score": row[6],
-            "away_score": row[7],
-            "notes": row[8],
-            "slot_ids": list(row[9]) if row[9] is not None else [],
+            "status": row[4],
+            "home_score": row[5],
+            "away_score": row[6],
+            "notes": row[7],
+            "slot_ids": list(row[8]) if row[8] is not None else [],
         }
 
 async def get_matches_at_time(date_time: datetime):
@@ -97,7 +94,6 @@ async def get_matches_at_time(date_time: datetime):
                    m.division,
                    m.home_team_id,
                    m.away_team_id,
-                   m.main_referee_id,
                    m.status,
                    m.home_score,
                    m.away_score,
@@ -107,7 +103,7 @@ async def get_matches_at_time(date_time: datetime):
             JOIN match_slot ms ON ms.match_id = m.id
             JOIN slots s ON s.id = ms.slot_id
             WHERE s.start_time <= %s AND s.end_time >= %s
-            GROUP BY m.id, m.division, m.home_team_id, m.away_team_id, m.main_referee_id,
+            GROUP BY m.id, m.division, m.home_team_id, m.away_team_id,
                      m.status, m.home_score, m.away_score, m.notes
             """,
             (date_time, date_time),
@@ -119,12 +115,11 @@ async def get_matches_at_time(date_time: datetime):
                 "division": row[1],
                 "home_team_id": row[2],
                 "away_team_id": row[3],
-                "main_referee_id": row[4],
-                "status": row[5],
-                "home_score": row[6],
-                "away_score": row[7],
-                "notes": row[8],
-                "slot_ids": list(row[9]) if row[9] is not None else [],
+                "status": row[4],
+                "home_score": row[5],
+                "away_score": row[6],
+                "notes": row[7],
+                "slot_ids": list(row[8]) if row[8] is not None else [],
             }
             for row in rows
         ]
@@ -134,7 +129,6 @@ async def add_match(
     division,
     home_team_id,
     away_team_id,
-    main_referee_id,
     status,
     home_score=0,
     away_score=0,
@@ -146,18 +140,17 @@ async def add_match(
         await cur.execute(
             """
             INSERT INTO matches (
-                division, home_team_id, away_team_id, main_referee_id,
+                division, home_team_id, away_team_id,
                 status, home_score, away_score, notes
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            RETURNING id, division, home_team_id, away_team_id, main_referee_id,
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, division, home_team_id, away_team_id,
                       status, home_score, away_score, notes
             """,
             (
                 division,
                 home_team_id,
                 away_team_id,
-                main_referee_id,
                 status,
                 home_score,
                 away_score,
@@ -182,11 +175,10 @@ async def add_match(
             "division": match_row[1],
             "home_team_id": match_row[2],
             "away_team_id": match_row[3],
-            "main_referee_id": match_row[4],
-            "status": match_row[5],
-            "home_score": match_row[6],
-            "away_score": match_row[7],
-            "notes": match_row[8],
+            "status": match_row[4],
+            "home_score": match_row[5],
+            "away_score": match_row[6],
+            "notes": match_row[7],
             "slot_ids": [slot_id] if slot_id is not None else [],
         }
 
@@ -240,6 +232,212 @@ async def addScore(
             "home_score": scores[0] if scores else None,
             "away_score": scores[1] if scores else None,
         }
+
+
+async def add_goal_event(match_id: int, team_id: int, player_id: int | None, minute: int | None, is_own_goal: bool):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT home_team_id, away_team_id
+            FROM matches
+            WHERE id = %s
+            """,
+            (match_id,),
+        )
+        match_row = await cur.fetchone()
+        if not match_row:
+            return {}
+        home_team_id = match_row[0]
+        away_team_id = match_row[1]
+
+        is_home = team_id == home_team_id
+        if is_own_goal:
+            is_home = not is_home
+
+        if is_home:
+            await cur.execute(
+                """
+                UPDATE matches
+                SET home_score = COALESCE(home_score, 0) + 1
+                WHERE id = %s
+                RETURNING home_score, away_score
+                """,
+                (match_id,),
+            )
+        else:
+            await cur.execute(
+                """
+                UPDATE matches
+                SET away_score = COALESCE(away_score, 0) + 1
+                WHERE id = %s
+                RETURNING home_score, away_score
+                """,
+                (match_id,),
+            )
+        scores = await cur.fetchone()
+
+        await cur.execute(
+            """
+            INSERT INTO goals(match_id, team_id, player_id, minute, is_own_goal)
+            VALUES(%s, %s, %s, %s, %s)
+            """,
+            (match_id, team_id, player_id, minute, is_own_goal),
+        )
+        await conn.commit()
+        return {
+            "match_id": match_id,
+            "team_id": team_id,
+            "player_id": player_id,
+            "minute": minute,
+            "is_own_goal": is_own_goal,
+            "home_score": scores[0] if scores else None,
+            "away_score": scores[1] if scores else None,
+        }
+
+
+async def add_card_event(match_id: int, team_id: int, player_id: int, minute: int | None, card_type: str, reason: str | None):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            INSERT INTO cards(match_id, team_id, player_id, minute, card_type, reason)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
+            """,
+            (match_id, team_id, player_id, minute, card_type, reason),
+        )
+        row = await cur.fetchone()
+        await conn.commit()
+        if not row:
+            return {}
+        return {"id": row[0]}
+
+
+async def add_substitution_event(
+    match_id: int,
+    team_id: int,
+    player_out_id: int,
+    player_in_id: int,
+    minute: int | None,
+):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            INSERT INTO substitutions(match_id, team_id, player_out_id, player_in_id, minute)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id
+            """,
+            (match_id, team_id, player_out_id, player_in_id, minute),
+        )
+        row = await cur.fetchone()
+        await conn.commit()
+        if not row:
+            return {}
+        return {"id": row[0]}
+
+
+async def set_match_score(match_id: int, home_score: int, away_score: int):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            UPDATE matches
+            SET home_score = %s, away_score = %s
+            WHERE id = %s
+            RETURNING id, home_score, away_score
+            """,
+            (home_score, away_score, match_id),
+        )
+        row = await cur.fetchone()
+        await conn.commit()
+        if not row:
+            return {}
+        return {"id": row[0], "home_score": row[1], "away_score": row[2]}
+
+
+async def finalize_match(match_id: int):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT division, home_score, away_score
+            FROM matches
+            WHERE id = %s
+            """,
+            (match_id,),
+        )
+        row = await cur.fetchone()
+        if not row:
+            return {}
+        division = row[0]
+        current_home = row[1] or 0
+        current_away = row[2] or 0
+        final_home = current_home 
+        final_away = current_away 
+
+        await cur.execute(
+            """
+            UPDATE matches
+            SET home_score = %s, away_score = %s, status = %s
+            WHERE id = %s
+            RETURNING id, status, home_score, away_score
+            """,
+            (final_home, final_away, MatchStatus.FINISHED.value, match_id),
+        )
+        updated = await cur.fetchone()
+        await conn.commit()
+        if not updated:
+            return {}
+
+    await update_rankings_for_division(division)
+    return {"id": updated[0], "status": updated[1], "home_score": updated[2], "away_score": updated[3]}
+
+
+async def list_matches_in_progress():
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT m.id,
+                   m.division,
+                   m.status,
+                   m.home_team_id,
+                   m.away_team_id,
+                   ht.name AS home_team,
+                   at.name AS away_team,
+                   COALESCE(m.home_score, 0) AS home_score,
+                   COALESCE(m.away_score, 0) AS away_score,
+                   MIN(s.start_time) AS start_time
+            FROM matches m
+            JOIN teams ht ON ht.id = m.home_team_id
+            JOIN teams at ON at.id = m.away_team_id
+            LEFT JOIN match_slot ms ON ms.match_id = m.id
+            LEFT JOIN slots s ON s.id = ms.slot_id
+            WHERE m.status = %s
+            GROUP BY m.id, m.division, m.status, m.home_team_id, m.away_team_id,
+                     ht.name, at.name, m.home_score, m.away_score
+            ORDER BY m.id
+            """,
+            (MatchStatus.IN_PROGRESS.value,),
+        )
+        rows = await cur.fetchall()
+        return [
+            {
+                "id": row[0],
+                "division": row[1],
+                "status": row[2],
+                "home_team_id": row[3],
+                "away_team_id": row[4],
+                "home_team": row[5],
+                "away_team": row[6],
+                "home_score": row[7],
+                "away_score": row[8],
+                "start_time": row[9],
+            }
+            for row in rows
+        ]
 
 
 async def get_match_previews():
@@ -298,23 +496,27 @@ async def get_match_details(match_id: int):
             SELECT m.id,
                    m.division,
                    m.status,
-                   ht.name AS home_team,
-                   at.name AS away_team,
+                   m.home_team_id,
+                   m.away_team_id,
                    COALESCE(m.home_score, 0) AS home_score,
                    COALESCE(m.away_score, 0) AS away_score,
                    MIN(s.start_time) AS start_time,
                    NOW() AS current_time,
                    COALESCE(p.first_name || ' ' || p.last_name, '') AS main_referee,
-                   COALESCE(m.notes, '') AS notes
+                   COALESCE(m.notes, '') AS notes,
+                   v.name AS venue
             FROM matches m
             JOIN teams ht ON ht.id = m.home_team_id
             JOIN teams at ON at.id = m.away_team_id
             LEFT JOIN match_slot ms ON ms.match_id = m.id
             LEFT JOIN slots s ON s.id = ms.slot_id
-            LEFT JOIN persons p ON p.id = m.main_referee_id
+            LEFT JOIN courts c ON c.id = s.court_id
+            LEFT JOIN venues v ON v.id = c.venue_id
+            LEFT JOIN match_referees mr ON mr.match_id = m.id
+            LEFT JOIN persons p ON p.id = mr.referee_id
             WHERE m.id = %s
-            GROUP BY m.id, m.division, m.status, m.home_score, m.away_score, m.notes,
-                     ht.name, at.name, p.first_name, p.last_name
+            GROUP BY m.id, m.division, m.status, m.home_team_id, m.away_team_id,
+                     m.home_score, m.away_score, m.notes, p.first_name, p.last_name
             """,
             (match_id,),
         )
@@ -322,18 +524,22 @@ async def get_match_details(match_id: int):
         if not row:
             print("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
             return {}
+        
+        ht_details = await get_team_details(row[3])
+        at_details = await get_team_details(row[4])
         return {
             "id": row[0],
             "division": row[1],
             "status": row[2],
-            "home_team": row[3],
-            "away_team": row[4],
+            "home_team": ht_details,
+            "away_team": at_details,
             "home_score": row[5],
             "away_score": row[6],
             "start_time": row[7],
             "current_time": row[8],
             "main_referee": row[9],
             "notes": row[10],
+            "venue": row[11]
         }
 
 async def perform_tie_breaker(home_team_id, away_team_id):

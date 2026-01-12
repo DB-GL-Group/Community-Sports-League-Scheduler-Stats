@@ -1,5 +1,6 @@
 import 'package:community_sports_league_scheduler/authprovider.dart';
 import 'package:community_sports_league_scheduler/pages/availability_page.dart';
+import 'package:community_sports_league_scheduler/pages/match_detail_page.dart';
 import 'package:community_sports_league_scheduler/router.dart';
 
 import 'package:community_sports_league_scheduler/pages/assignments_page.dart';
@@ -11,6 +12,7 @@ import 'package:community_sports_league_scheduler/pages/login_page.dart';
 import 'package:community_sports_league_scheduler/pages/signup_page.dart';
 import 'package:community_sports_league_scheduler/pages/stats_page.dart';
 import 'package:community_sports_league_scheduler/pages/admin_keys_page.dart';
+import 'package:community_sports_league_scheduler/pages/admin_console_page.dart';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -23,11 +25,7 @@ void main() => runApp(
         create: (_) => ApiRouter(),
       ),
       ChangeNotifierProvider(
-        create: (context) {
-          final auth = AuthProvider();
-          auth.loadUser(context.read<ApiRouter>());
-          return auth;
-        },
+        create: (context) => AuthProvider(),
       ),
     ],
     child: const SportsLeagueScheduler(),
@@ -48,6 +46,17 @@ class SportsLeagueScheduler extends StatelessWidget {
           GoRoute(
             path: '/',
             builder: (_, __) => const MatchesPage(),
+          ),
+          GoRoute(
+            path: '/matches/:id',
+            builder: (context, state) {
+              final matchId = int.parse(state.pathParameters['id']!);
+              return MatchDetailPage(matchId: matchId);
+            },
+            redirect: (context, state) {
+              final auth = context.read<AuthProvider>();
+              return auth.isLoggedIn ? null : '/';
+            },
           ),
           GoRoute(
             path: '/rankings',
@@ -108,6 +117,14 @@ class SportsLeagueScheduler extends StatelessWidget {
           GoRoute(
             path: '/admin/role-keys',
             builder: (_, __) => const AdminKeysPage(),
+            redirect: (context, state) {
+              final auth = context.read<AuthProvider>();
+              return !auth.hasRole('ADMIN') ? '/' : null;
+            },
+          ),
+          GoRoute(
+            path: '/admin/console',
+            builder: (_, __) => const AdminConsolePage(),
             redirect: (context, state) {
               final auth = context.read<AuthProvider>();
               return !auth.hasRole('ADMIN') ? '/' : null;

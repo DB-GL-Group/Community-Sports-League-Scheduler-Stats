@@ -3,6 +3,7 @@ import 'package:community_sports_league_scheduler/widgets/matchcard.dart';
 import 'package:community_sports_league_scheduler/widgets/template.dart';
 import 'package:community_sports_league_scheduler/object_models.dart' as om;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class MatchesPage extends StatefulWidget {
@@ -26,228 +27,235 @@ class _MatchesPageState extends State<MatchesPage> {
   }
 
   Future<List<om.Match>> _loadMatches(ApiRouter apiRouter) async {
-    // List<om.Match> matches = [];
-    // try {
-    //   final data = await apiRouter.fetchData("matches/previews");
-    //   for(Map<String, dynamic> matchJson in data['body']) {
-    //     matches.add(om.Match.fromJson(matchJson));
-    //   }
-    // } catch (e) {
-    //   print(e.toString());
-    // } finally {
-    //   return matches;
-    // }
-    return [
-      om.Match(
-        divisionName: 'First Division',
-        homeTeam: om.Team(
-          name: 'Thoune',
-          primaryColor: '#FF0000',
-          secondaryColor: '#FFFFFF',
-        ),
-        awayTeam: om.Team(
-          name: 'Lucerne',
-          primaryColor: '#0000FF',
-          secondaryColor: '#FFFFFF',
-        ),
-        status: 'Finished',
-        homeScore: 4,
-        awayScore: 1,
-        startTime: DateTime.parse('2025-12-06T18:00:00.356518Z'),
-      ),
-      om.Match(
-        divisionName: 'First Division',
-        homeTeam: om.Team(
-          name: 'Grasshoper',
-          primaryColor: '#0000FF',
-          secondaryColor: '#FFFFFF',
-        ),
-        awayTeam: om.Team(
-          name: 'Servette',
-          primaryColor: '#992E40',
-          secondaryColor: '#FFFFFF',
-        ),
-        status: 'Finished',
-        homeScore: 0,
-        awayScore: 1,
-        startTime: DateTime.parse('2025-12-06T18:00:00.356518Z'),
-      ),
-      om.Match(
-        divisionName: 'First Division',
-        homeTeam: om.Team(
-          name: 'St. Gallen',
-          primaryColor: '#00FF00',
-          secondaryColor: '#FFFFFF',
-        ),
-        awayTeam: om.Team(
-          name: 'FC Zürich',
-          primaryColor: '#FFFFFF',
-          secondaryColor: '#0000FF',
-        ),
-        status: 'Finished',
-        homeScore: 1,
-        awayScore: 2,
-        startTime: DateTime.parse('2025-12-06T18:00:00.356518Z'),
-      ),
-      om.Match(
-        divisionName: 'First Division',
-        homeTeam: om.Team(
-          name: 'FC Winterthour',
-          primaryColor: '#FF0000',
-          secondaryColor: '#000000',
-        ),
-        awayTeam: om.Team(
-          name: 'FC Basel',
-          primaryColor: '#FF0000',
-          secondaryColor: '#0000FF',
-        ),
-        status: 'Finished',
-        homeScore: 1,
-        awayScore: 2,
-        startTime: DateTime.parse('2025-12-07T18:00:00.356518Z'),
-      ),
-      om.Match(
-        divisionName: 'First Division',
-        homeTeam: om.Team(
-          name: 'Lausanne',
-          primaryColor: '#0000FF',
-          secondaryColor: '#FFFFFF',
-        ),
-        awayTeam: om.Team(
-          name: 'Lugano',
-          primaryColor: '#000000',
-          secondaryColor: '#FFFFFF',
-        ),
-        status: 'Finished',
-        homeScore: 0,
-        awayScore: 0,
-        startTime: DateTime.parse('2025-12-07T18:00:00.356518Z'),
-      ),
-      om.Match(
-        divisionName: 'First Division',
-        homeTeam: om.Team(
-          name: 'Sion',
-          primaryColor: '#FFFFFF',
-          secondaryColor: '#FF0000',
-        ),
-        awayTeam: om.Team(
-          name: 'Young Boys',
-          primaryColor: '#FFFF00',
-          secondaryColor: '#000000',
-        ),
-        status: 'Finished',
-        homeScore: 2,
-        awayScore: 0,
-        startTime: DateTime.parse('2025-12-07T18:00:00.356518Z'),
-      ),
-      om.Match(
-        divisionName: 'First Division',
-        homeTeam: om.Team(
-          name: 'Thoune',
-          primaryColor: '#FF0000',
-          secondaryColor: '#FFFFFF',
-        ),
-        awayTeam: om.Team(
-          name: 'Lucerne',
-          primaryColor: '#0000FF',
-          secondaryColor: '#FFFFFF',
-        ),
-        status: 'Finished',
-        homeScore: 4,
-        awayScore: 1,
-        startTime: DateTime.parse('2025-12-08T18:00:00.356518Z'),
-      ),
-      om.Match(
-        divisionName: 'First Division',
-        homeTeam: om.Team(
-          name: 'Grasshoper',
-          primaryColor: '#0000FF',
-          secondaryColor: '#FFFFFF',
-        ),
-        awayTeam: om.Team(
-          name: 'Servette',
-          primaryColor: '#992E40',
-          secondaryColor: '#FFFFFF',
-        ),
-        status: 'Finished',
-        homeScore: 0,
-        awayScore: 1,
-        startTime: DateTime.parse('2025-12-08T18:00:00.356518Z'),
-      ),
-      om.Match(
-        divisionName: 'First Division',
-        homeTeam: om.Team(
-          name: 'St. Gallen',
-          primaryColor: '#00FF00',
-          secondaryColor: '#FFFFFF',
-        ),
-        awayTeam: om.Team(
-          name: 'FC Zürich',
-          primaryColor: '#FFFFFF',
-          secondaryColor: '#0000FF',
-        ),
-        status: 'Finished',
-        homeScore: 1,
-        awayScore: 2,
-        startTime: DateTime.parse('2025-12-08T18:00:00.356518Z'),
-      ),
-      om.Match(
-        divisionName: 'First Division',
-        homeTeam: om.Team(
-          name: 'FC Winterthour',
-          primaryColor: '#FF0000',
-          secondaryColor: '#000000',
-        ),
-        awayTeam: om.Team(
-          name: 'FC Basel',
-          primaryColor: '#FF0000',
-          secondaryColor: '#0000FF',
-        ),
-        status: 'Finished',
-        homeScore: 1,
-        awayScore: 2,
-        startTime: DateTime.parse('2025-12-09T18:00:00.356518Z'),
-      ),
-      om.Match(
-        divisionName: 'First Division',
-        homeTeam: om.Team(
-          name: 'Lausanne',
-          primaryColor: '#0000FF',
-          secondaryColor: '#FFFFFF',
-        ),
-        awayTeam: om.Team(
-          name: 'Lugano',
-          primaryColor: '#000000',
-          secondaryColor: '#FFFFFF',
-        ),
-        status: 'Finished',
-        homeScore: 0,
-        awayScore: 0,
-        startTime: DateTime.parse('2025-12-09T18:00:00.356518Z'),
-      ),
-      om.Match(
-        divisionName: 'First Division',
-        homeTeam: om.Team(
-          name: 'Sion',
-          primaryColor: '#FFFFFF',
-          secondaryColor: '#FF0000',
-        ),
-        awayTeam: om.Team(
-          name: 'Young Boys',
-          primaryColor: '#FFFF00',
-          secondaryColor: '#000000',
-        ),
-        status: 'Finished',
-        homeScore: 2,
-        awayScore: 0,
-        startTime: DateTime.parse('2025-12-09T18:00:00.356518Z'),
-      ),
-    ];
+    List<om.Match> matches = [];
+    try {
+      final data = await apiRouter.fetchData("matches/previews");
+      for(Map<String, dynamic> matchJson in data) {
+        matches.add(om.Match.fromJson(matchJson));
+      }
+    } catch (e) {
+      throw Exception("Error loading matches: $e");
+    } finally {
+      return matches;
+    }
+    // return [
+    //   om.Match(
+    //     divisionName: 'First Division',
+    //     homeTeam: om.Team(
+    //       name: 'Thoune',
+    //       primaryColor: '#FF0000',
+    //       secondaryColor: '#FFFFFF',
+    //     ),
+    //     awayTeam: om.Team(
+    //       name: 'Lucerne',
+    //       primaryColor: '#0000FF',
+    //       secondaryColor: '#FFFFFF',
+    //     ),
+    //     status: 'Finished',
+    //     homeScore: 4,
+    //     awayScore: 1,
+    //     startTime: DateTime.parse('2025-12-06T18:00:00.356518Z'),
+    //   ),
+    //   om.Match(
+    //     divisionName: 'First Division',
+    //     homeTeam: om.Team(
+    //       name: 'Grasshoper',
+    //       primaryColor: '#0000FF',
+    //       secondaryColor: '#FFFFFF',
+    //     ),
+    //     awayTeam: om.Team(
+    //       name: 'Servette',
+    //       primaryColor: '#992E40',
+    //       secondaryColor: '#FFFFFF',
+    //     ),
+    //     status: 'Finished',
+    //     homeScore: 0,
+    //     awayScore: 1,
+    //     startTime: DateTime.parse('2025-12-06T18:00:00.356518Z'),
+    //   ),
+    //   om.Match(
+    //     divisionName: 'First Division',
+    //     homeTeam: om.Team(
+    //       name: 'St. Gallen',
+    //       primaryColor: '#00FF00',
+    //       secondaryColor: '#FFFFFF',
+    //     ),
+    //     awayTeam: om.Team(
+    //       name: 'FC Zürich',
+    //       primaryColor: '#FFFFFF',
+    //       secondaryColor: '#0000FF',
+    //     ),
+    //     status: 'Finished',
+    //     homeScore: 1,
+    //     awayScore: 2,
+    //     startTime: DateTime.parse('2025-12-06T18:00:00.356518Z'),
+    //   ),
+    //   om.Match(
+    //     divisionName: 'First Division',
+    //     homeTeam: om.Team(
+    //       name: 'FC Winterthour',
+    //       primaryColor: '#FF0000',
+    //       secondaryColor: '#000000',
+    //     ),
+    //     awayTeam: om.Team(
+    //       name: 'FC Basel',
+    //       primaryColor: '#FF0000',
+    //       secondaryColor: '#0000FF',
+    //     ),
+    //     status: 'Finished',
+    //     homeScore: 1,
+    //     awayScore: 2,
+    //     startTime: DateTime.parse('2025-12-07T18:00:00.356518Z'),
+    //   ),
+    //   om.Match(
+    //     divisionName: 'First Division',
+    //     homeTeam: om.Team(
+    //       name: 'Lausanne',
+    //       primaryColor: '#0000FF',
+    //       secondaryColor: '#FFFFFF',
+    //     ),
+    //     awayTeam: om.Team(
+    //       name: 'Lugano',
+    //       primaryColor: '#000000',
+    //       secondaryColor: '#FFFFFF',
+    //     ),
+    //     status: 'Finished',
+    //     homeScore: 0,
+    //     awayScore: 0,
+    //     startTime: DateTime.parse('2025-12-07T18:00:00.356518Z'),
+    //   ),
+    //   om.Match(
+    //     divisionName: 'First Division',
+    //     homeTeam: om.Team(
+    //       name: 'Sion',
+    //       primaryColor: '#FFFFFF',
+    //       secondaryColor: '#FF0000',
+    //     ),
+    //     awayTeam: om.Team(
+    //       name: 'Young Boys',
+    //       primaryColor: '#FFFF00',
+    //       secondaryColor: '#000000',
+    //     ),
+    //     status: 'Finished',
+    //     homeScore: 2,
+    //     awayScore: 0,
+    //     startTime: DateTime.parse('2025-12-07T18:00:00.356518Z'),
+    //   ),
+    //   om.Match(
+    //     divisionName: 'First Division',
+    //     homeTeam: om.Team(
+    //       name: 'Thoune',
+    //       primaryColor: '#FF0000',
+    //       secondaryColor: '#FFFFFF',
+    //     ),
+    //     awayTeam: om.Team(
+    //       name: 'Lucerne',
+    //       primaryColor: '#0000FF',
+    //       secondaryColor: '#FFFFFF',
+    //     ),
+    //     status: 'Finished',
+    //     homeScore: 4,
+    //     awayScore: 1,
+    //     startTime: DateTime.parse('2025-12-08T18:00:00.356518Z'),
+    //   ),
+    //   om.Match(
+    //     divisionName: 'First Division',
+    //     homeTeam: om.Team(
+    //       name: 'Grasshoper',
+    //       primaryColor: '#0000FF',
+    //       secondaryColor: '#FFFFFF',
+    //     ),
+    //     awayTeam: om.Team(
+    //       name: 'Servette',
+    //       primaryColor: '#992E40',
+    //       secondaryColor: '#FFFFFF',
+    //     ),
+    //     status: 'Finished',
+    //     homeScore: 0,
+    //     awayScore: 1,
+    //     startTime: DateTime.parse('2025-12-08T18:00:00.356518Z'),
+    //   ),
+    //   om.Match(
+    //     divisionName: 'First Division',
+    //     homeTeam: om.Team(
+    //       name: 'St. Gallen',
+    //       primaryColor: '#00FF00',
+    //       secondaryColor: '#FFFFFF',
+    //     ),
+    //     awayTeam: om.Team(
+    //       name: 'FC Zürich',
+    //       primaryColor: '#FFFFFF',
+    //       secondaryColor: '#0000FF',
+    //     ),
+    //     status: 'Finished',
+    //     homeScore: 1,
+    //     awayScore: 2,
+    //     startTime: DateTime.parse('2025-12-08T18:00:00.356518Z'),
+    //   ),
+    //   om.Match(
+    //     divisionName: 'First Division',
+    //     homeTeam: om.Team(
+    //       name: 'FC Winterthour',
+    //       primaryColor: '#FF0000',
+    //       secondaryColor: '#000000',
+    //     ),
+    //     awayTeam: om.Team(
+    //       name: 'FC Basel',
+    //       primaryColor: '#FF0000',
+    //       secondaryColor: '#0000FF',
+    //     ),
+    //     status: 'Finished',
+    //     homeScore: 1,
+    //     awayScore: 2,
+    //     startTime: DateTime.parse('2025-12-09T18:00:00.356518Z'),
+    //   ),
+    //   om.Match(
+    //     divisionName: 'First Division',
+    //     homeTeam: om.Team(
+    //       name: 'Lausanne',
+    //       primaryColor: '#0000FF',
+    //       secondaryColor: '#FFFFFF',
+    //     ),
+    //     awayTeam: om.Team(
+    //       name: 'Lugano',
+    //       primaryColor: '#000000',
+    //       secondaryColor: '#FFFFFF',
+    //     ),
+    //     status: 'Finished',
+    //     homeScore: 0,
+    //     awayScore: 0,
+    //     startTime: DateTime.parse('2025-12-09T18:00:00.356518Z'),
+    //   ),
+    //   om.Match(
+    //     divisionName: 'First Division',
+    //     homeTeam: om.Team(
+    //       name: 'Sion',
+    //       primaryColor: '#FFFFFF',
+    //       secondaryColor: '#FF0000',
+    //     ),
+    //     awayTeam: om.Team(
+    //       name: 'Young Boys',
+    //       primaryColor: '#FFFF00',
+    //       secondaryColor: '#000000',
+    //     ),
+    //     status: 'Finished',
+    //     homeScore: 2,
+    //     awayScore: 0,
+    //     startTime: DateTime.parse('2025-12-09T18:00:00.356518Z'),
+    //   ),
+    // ];
   }
 
   List<om.Match> _sortMatches(List<om.Match> matches) {
     matches.sort(
-      (a, b) => b.startTime.compareTo(a.startTime),
+      (a, b) {
+        final aTime = a.startTime;
+        final bTime = b.startTime;
+        if (aTime == null && bTime == null) return 0;
+        if (aTime == null) return 1;
+        if (bTime == null) return -1;
+        return bTime.compareTo(aTime);
+      },
     );
     return matches;
   }
@@ -287,7 +295,12 @@ class _MatchesPageState extends State<MatchesPage> {
                 padding: const EdgeInsets.all(16),
                 itemCount: sortedMatches.length,
                 itemBuilder: (context, index) {
-                  return MatchCard(match: sortedMatches[index]);
+                  return InkWell(
+                    onTap: () {
+                      context.push('/matches/${sortedMatches[index].id}');
+                    },
+                    child: MatchCard(match: sortedMatches[index]),
+                  );
                 },
               )
             );

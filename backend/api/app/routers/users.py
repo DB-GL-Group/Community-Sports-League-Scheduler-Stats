@@ -2,11 +2,21 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from shared.players import create_player, delete_player_if_orphaned
+from shared.players import (
+    create_player,
+    delete_player_if_orphaned,
+    list_available_players,
+)
 from ..schemas.player import PlayerAddRequest
 from ..dependencies.auth import require_role
 from ..schemas.auth import RoleKeyRequest, RoleKeyResponse, UserResponse
-from ..schemas.match import MatchPreviewResponse
+from ..schemas.match import (
+    CardEventRequest,
+    GoalEventRequest,
+    MatchAdminResponse,
+    MatchPreviewResponse,
+    SubstitutionEventRequest,
+)
 from ..schemas.referee import (
     RefereeAvailabilityRequest,
     RefereeAvailabilityResponse,
@@ -18,20 +28,30 @@ from ..schemas.fan import (
     PlayerIdRequest,
     TeamIdRequest,
 )
-from ..schemas.teams import TeamAddRequest, TeamResponse
+from ..schemas.teams import TeamAddRequest, TeamResponse, TeamUpdateRequest
 from shared.referees import (
     add_referee_availability,
     get_referee_availability,
     get_referee_matches,
     remove_referee_availability,
     replace_referee_availability,
+    get_match_slots_without_referee
 )
+from shared.matches import (
+    add_card_event,
+    add_goal_event,
+    add_substitution_event,
+    finalize_match,
+    list_matches_in_progress,
+)
+from shared.rankings import get_rankings_with_tiebreak
 from shared.teams import (
     add_player,
     create_team,
     get_team_by_manager_id,
     list_team_players,
     remove_player_from_team,
+    update_team,
 )
 from shared.fans import (
     add_favorite_team,
@@ -49,6 +69,15 @@ from shared.fans import (
 from shared.role_keys import create_role_key
 
 from helper.players import populate_players
+
+from worker.tasks.matchGeneretor import generate_matches
+from helper.redis import MATCHES_GEN_JOB_ID, _ACTIVE_STATUSES, _get_queue
+
+from fastapi import APIRouter, HTTPException, status
+from redis import Redis
+from rq import Queue
+from rq.job import Job
+
 
 router = APIRouter(prefix="/user", tags=["user"])
 
@@ -69,6 +98,7 @@ async def get_team(current_user: UserResponse = Depends(require_role("MANAGER"))
         "short_name": team["short_name"],
         "color_primary": team["color_primary"],
         "color_secondary": team["color_secondary"],
+        "players": team.get("players", []),
     }
 
 @router.post("/manager/team", response_model=TeamResponse, status_code=status.HTTP_201_CREATED)
@@ -94,6 +124,40 @@ async def add_team(
         "short_name": team["short_name"],
         "color_primary": team["color_primary"],
         "color_secondary": team["color_secondary"],
+        "players": [],
+    }
+
+
+@router.put("/manager/team", response_model=TeamResponse)
+async def update_team_info(
+    payload: TeamUpdateRequest,
+    current_user: UserResponse = Depends(require_role("MANAGER")),
+):
+    if not current_user.get("person_id"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Manager profile missing")
+    team = await get_team_by_manager_id(current_user["person_id"])
+    if not team:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+    updated = await update_team(
+        team["id"],
+        payload.division if payload.division is not None else team["division"],
+        payload.name if payload.name is not None else team["name"],
+        payload.short_name if payload.short_name is not None else team["short_name"],
+        payload.color_primary if payload.color_primary is not None else team["color_primary"],
+        payload.color_secondary if payload.color_secondary is not None else team["color_secondary"],
+    )
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Team update failed")
+    players = await list_team_players(updated["id"])
+    return {
+        "id": updated["id"],
+        "division": updated["division"],
+        "name": updated["name"],
+        "manager_id": updated["manager_id"],
+        "short_name": updated["short_name"],
+        "color_primary": updated["color_primary"],
+        "color_secondary": updated["color_secondary"],
+        "players": players,
     }
 
 @router.post("/manager/team/players", status_code=status.HTTP_201_CREATED)
@@ -106,8 +170,14 @@ async def add_team_player(
     team = await get_team_by_manager_id(current_user["person_id"])
     if not team:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
-    player = await create_player(payload.first_name, payload.last_name)
-    row = await add_player(player["id"], team["id"], payload.number)
+    if payload.player_id:
+        player_id = payload.player_id
+    else:
+        if not payload.first_name or not payload.last_name:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing player name")
+        player = await create_player(payload.first_name, payload.last_name)
+        player_id = player["id"]
+    row = await add_player(player_id, team["id"], payload.number)
     if not row:
         return {"status": "exists"}
     return {"status": "created"}
@@ -140,6 +210,18 @@ async def list_team_players_endpoint(
     if not team:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
     return await list_team_players(team["id"])
+
+
+@router.get("/manager/team/players/available")
+async def list_available_team_players_endpoint(
+    current_user: UserResponse = Depends(require_role("MANAGER")),
+):
+    if not current_user.get("person_id"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Manager profile missing")
+    team = await get_team_by_manager_id(current_user["person_id"])
+    if not team:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+    return await list_available_players(team["id"])
 
 #=========== REFEREE ===========#
 @router.get("/referee/availability", response_model=list[RefereeAvailabilityResponse])
@@ -184,6 +266,14 @@ async def remove_referee_availability_slot(
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Availability not found")
     return {"status": "deleted"}
+
+
+@router.get("/referee/openslots")
+async def list_referee_openslots(current_user: UserResponse = Depends(require_role("REFEREE"))):
+    if not current_user.get("person_id"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Referee profile missing")
+    rows = await get_match_slots_without_referee()
+    return rows
 
 
 @router.get("/referee/matches", response_model=list[MatchPreviewResponse])
@@ -338,6 +428,112 @@ async def populate_players_endpoint(
     return {"created": len(created)}
 
 
+@router.get("/admin/console/matches", response_model=list[MatchAdminResponse])
+async def list_admin_matches_in_progress(
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    rows = await list_matches_in_progress()
+    return [
+        {
+            "id": row["id"],
+            "division": row["division"],
+            "status": row["status"],
+            "home_team_id": row["home_team_id"],
+            "away_team_id": row["away_team_id"],
+            "home_team": row["home_team"],
+            "away_team": row["away_team"],
+            "home_score": row["home_score"],
+            "away_score": row["away_score"],
+            "start_time": row["start_time"].isoformat()
+            if row.get("start_time") and hasattr(row["start_time"], "isoformat")
+            else None,
+        }
+        for row in rows
+    ]
+
+
+@router.post("/admin/console/matches/{match_id}/goal")
+async def admin_add_goal(
+    match_id: int,
+    payload: GoalEventRequest,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    row = await add_goal_event(
+        match_id,
+        payload.team_id,
+        payload.player_id,
+        payload.minute,
+        payload.is_own_goal,
+    )
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
+    return row
+
+
+@router.post("/admin/console/matches/{match_id}/card")
+async def admin_add_card(
+    match_id: int,
+    payload: CardEventRequest,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    row = await add_card_event(
+        match_id,
+        payload.team_id,
+        payload.player_id,
+        payload.minute,
+        payload.card_type,
+        payload.reason,
+    )
+    if not row:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Card not created")
+    return row
+
+
+@router.post("/admin/console/matches/{match_id}/substitution")
+async def admin_add_substitution(
+    match_id: int,
+    payload: SubstitutionEventRequest,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    row = await add_substitution_event(
+        match_id,
+        payload.team_id,
+        payload.player_out_id,
+        payload.player_in_id,
+        payload.minute,
+    )
+    if not row:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Substitution not created")
+    return row
+
+
+@router.post("/admin/console/matches/{match_id}/finalize")
+async def admin_finalize_match(
+    match_id: int,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    row = await finalize_match(match_id)
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
+    return row
+
+
+@router.get("/admin/console/rankings/{division}")
+async def admin_get_rankings(
+    division: int,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    return await get_rankings_with_tiebreak(division)
+
+
+@router.get("/admin/console/teams/{team_id}/players")
+async def admin_list_team_players(
+    team_id: int,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    return await list_team_players(team_id)
+
+
 @router.post("/admin/role-keys", response_model=RoleKeyResponse)
 async def create_role_key_endpoint(
     payload: RoleKeyRequest,
@@ -352,3 +548,25 @@ async def create_role_key_endpoint(
     if not created:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Key generation failed")
     return {"role": created["role_name"], "key": created["token"]}
+
+@router.post("/admin/generate_matches/run")
+async def generate_matches_endpoint(
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    queue = _get_queue()
+    try:
+        existing_job = Job.fetch(MATCHES_GEN_JOB_ID, connection=queue.connection)
+    except Exception:
+        existing_job = None
+
+    if existing_job:
+        status_name = existing_job.get_status()
+        if status_name in _ACTIVE_STATUSES:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Scheduler already running",
+            )
+        existing_job.delete()
+
+    job = queue.enqueue(generate_matches, job_id=MATCHES_GEN_JOB_ID)
+    return {"job_id": job.id, "status": "queued"}

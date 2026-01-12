@@ -35,7 +35,6 @@ CREATE TABLE player_team (
     player_id    INTEGER NOT NULL REFERENCES players(person_id),
     team_id      INTEGER NOT NULL REFERENCES teams(id),
     shirt_number INTEGER,
-    active       BOOLEAN NOT NULL DEFAULT TRUE,
     PRIMARY KEY (player_id, team_id)
 );
 
@@ -72,7 +71,6 @@ CREATE TABLE matches (
     division        INTEGER NOT NULL,
     home_team_id    INTEGER NOT NULL REFERENCES teams(id),
     away_team_id    INTEGER NOT NULL REFERENCES teams(id),
-    main_referee_id INTEGER REFERENCES referees(person_id),
     status          VARCHAR(20) NOT NULL DEFAULT 'scheduled', -- scheduled, finished, postponed...
     home_score      INTEGER,
     away_score      INTEGER,
@@ -139,6 +137,13 @@ CREATE TABLE substitutions (
     player_out_id INTEGER NOT NULL REFERENCES players(person_id),
     player_in_id  INTEGER NOT NULL REFERENCES players(person_id),
     minute        INTEGER
+);
+
+CREATE TABLE ranking (
+    id  SERIAL PRIMARY KEY,
+    team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    goal_diff INTEGER,
+    points INTEGER 
 );
 
 -- =========================================================
