@@ -25,9 +25,15 @@ async def get_referee_availability(referee_id: int):
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
             """
-            SELECT s.id, s.court_id, s.start_time, s.end_time
+            SELECT s.id, v.name AS venue, s.start_time, s.end_time, ht.name + " vs " + at.name AS match
             FROM ref_dispos rd
             JOIN slots s ON s.id = rd.slot_id
+            JOIN courts c ON c.id = s.court_id
+            JOIN venues v ON v.id = c.venue_id
+            JOIN match_slot ms ON ms.slot_id = s.id
+            JOIN match m ON m.id = ms.match_id
+            JOIN teams ht ON ht.id = m.home_team_id
+            JOIN teams at ON at.id = m.away_team_id
             WHERE rd.referee_id = %s
             ORDER BY s.start_time
             """,
@@ -100,17 +106,19 @@ async def get_referee_matches(referee_id: int):
                    m.status,
                    ht.name AS home_team,
                    at.name AS away_team,
-                   COALESCE(m.home_score, 0) AS home_score,
-                   COALESCE(m.away_score, 0) AS away_score,
-                   MIN(s.start_time) AS start_time
+                   MIN(s.start_time) AS start_time,
+                   MAX(s.end_time) AS end_time,
+                   v.name AS venue
             FROM matches m
             JOIN teams ht ON ht.id = m.home_team_id
             JOIN teams at ON at.id = m.away_team_id
             LEFT JOIN match_slot ms ON ms.match_id = m.id
             LEFT JOIN slots s ON s.id = ms.slot_id
+            LEFT JOIN courts c ON c.id = s.court_id
+            LEFT JOIN venues v ON v.id = c.venue_id
             LEFT JOIN match_referees mr ON mr.match_id = m.id
             WHERE m.main_referee_id = %s OR mr.referee_id = %s
-            GROUP BY m.id, m.division, m.status, ht.name, at.name, m.home_score, m.away_score
+            GROUP BY m.id, m.division, m.status, ht.name, at.name
             ORDER BY m.id, start_time
             """,
             (referee_id, referee_id),
@@ -135,10 +143,14 @@ async def get_match_slots_without_referee():
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
             """
-            SELECT s.id, s.court_id, s.start_time, s.end_time, m.id AS match_id
+            SELECT s.id, v.name AS venue, s.start_time, s.end_time, ht.name + " vs " + at.name AS match
             FROM matches m
             JOIN match_slot ms ON ms.match_id = m.id
             JOIN slots s ON s.id = ms.slot_id
+            JOIN courts c ON c.id = s.court_id
+            JOIN venues v ON v.id = c.venue_id
+            JOIN teams ht ON m.home_team_id = ht.id
+            JOIN teams at ON m.away_team_id = at.id
             LEFT JOIN match_referees mr ON mr.match_id = m.id
             WHERE m.main_referee_id IS NULL
               AND mr.match_id IS NULL
