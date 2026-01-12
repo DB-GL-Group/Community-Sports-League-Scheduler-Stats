@@ -139,6 +139,13 @@ CREATE TABLE substitutions (
     minute        INTEGER
 );
 
+CREATE TABLE ranking (
+    id  SERIAL PRIMARY KEY,
+    team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    goal_diff INTEGER,
+    points INTEGER 
+);
+
 -- =========================================================
 --  DISCIPLINE : SUSPENSIONS & FINES
 -- =========================================================

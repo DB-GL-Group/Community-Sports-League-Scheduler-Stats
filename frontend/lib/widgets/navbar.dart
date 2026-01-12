@@ -87,6 +87,11 @@ class NavBar extends StatelessWidget {
           contentPadding: EdgeInsets.only(left: 8),
         ),
         ListTile(
+          leading: Icon(Icons.monitor),
+          title: Text('Console'),
+          onTap: () => context.go('/admin/console'),
+        ),
+        ListTile(
           leading: Icon(Icons.vpn_key),
           title: Text('Role Keys'),
           onTap: () => context.go('/admin/role-keys'),

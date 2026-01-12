@@ -247,7 +247,14 @@ class _MatchesPageState extends State<MatchesPage> {
 
   List<om.Match> _sortMatches(List<om.Match> matches) {
     matches.sort(
-      (a, b) => b.startTime.compareTo(a.startTime),
+      (a, b) {
+        final aTime = a.startTime;
+        final bTime = b.startTime;
+        if (aTime == null && bTime == null) return 0;
+        if (aTime == null) return 1;
+        if (bTime == null) return -1;
+        return bTime.compareTo(aTime);
+      },
     );
     return matches;
   }

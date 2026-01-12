@@ -3,6 +3,7 @@ from datetime import datetime
 
 from shared.db import get_async_pool
 from shared.teams import get_all_teams_id, get_team_details
+from shared.rankings import update_rankings_for_division
 
 import random
 
@@ -231,6 +232,212 @@ async def addScore(
             "home_score": scores[0] if scores else None,
             "away_score": scores[1] if scores else None,
         }
+
+
+async def add_goal_event(match_id: int, team_id: int, player_id: int | None, minute: int | None, is_own_goal: bool):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT home_team_id, away_team_id
+            FROM matches
+            WHERE id = %s
+            """,
+            (match_id,),
+        )
+        match_row = await cur.fetchone()
+        if not match_row:
+            return {}
+        home_team_id = match_row[0]
+        away_team_id = match_row[1]
+
+        is_home = team_id == home_team_id
+        if is_own_goal:
+            is_home = not is_home
+
+        if is_home:
+            await cur.execute(
+                """
+                UPDATE matches
+                SET home_score = COALESCE(home_score, 0) + 1
+                WHERE id = %s
+                RETURNING home_score, away_score
+                """,
+                (match_id,),
+            )
+        else:
+            await cur.execute(
+                """
+                UPDATE matches
+                SET away_score = COALESCE(away_score, 0) + 1
+                WHERE id = %s
+                RETURNING home_score, away_score
+                """,
+                (match_id,),
+            )
+        scores = await cur.fetchone()
+
+        await cur.execute(
+            """
+            INSERT INTO goals(match_id, team_id, player_id, minute, is_own_goal)
+            VALUES(%s, %s, %s, %s, %s)
+            """,
+            (match_id, team_id, player_id, minute, is_own_goal),
+        )
+        await conn.commit()
+        return {
+            "match_id": match_id,
+            "team_id": team_id,
+            "player_id": player_id,
+            "minute": minute,
+            "is_own_goal": is_own_goal,
+            "home_score": scores[0] if scores else None,
+            "away_score": scores[1] if scores else None,
+        }
+
+
+async def add_card_event(match_id: int, team_id: int, player_id: int, minute: int | None, card_type: str, reason: str | None):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            INSERT INTO cards(match_id, team_id, player_id, minute, card_type, reason)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
+            """,
+            (match_id, team_id, player_id, minute, card_type, reason),
+        )
+        row = await cur.fetchone()
+        await conn.commit()
+        if not row:
+            return {}
+        return {"id": row[0]}
+
+
+async def add_substitution_event(
+    match_id: int,
+    team_id: int,
+    player_out_id: int,
+    player_in_id: int,
+    minute: int | None,
+):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            INSERT INTO substitutions(match_id, team_id, player_out_id, player_in_id, minute)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id
+            """,
+            (match_id, team_id, player_out_id, player_in_id, minute),
+        )
+        row = await cur.fetchone()
+        await conn.commit()
+        if not row:
+            return {}
+        return {"id": row[0]}
+
+
+async def set_match_score(match_id: int, home_score: int, away_score: int):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            UPDATE matches
+            SET home_score = %s, away_score = %s
+            WHERE id = %s
+            RETURNING id, home_score, away_score
+            """,
+            (home_score, away_score, match_id),
+        )
+        row = await cur.fetchone()
+        await conn.commit()
+        if not row:
+            return {}
+        return {"id": row[0], "home_score": row[1], "away_score": row[2]}
+
+
+async def finalize_match(match_id: int):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT division, home_score, away_score
+            FROM matches
+            WHERE id = %s
+            """,
+            (match_id,),
+        )
+        row = await cur.fetchone()
+        if not row:
+            return {}
+        division = row[0]
+        current_home = row[1] or 0
+        current_away = row[2] or 0
+        final_home = current_home 
+        final_away = current_away 
+
+        await cur.execute(
+            """
+            UPDATE matches
+            SET home_score = %s, away_score = %s, status = %s
+            WHERE id = %s
+            RETURNING id, status, home_score, away_score
+            """,
+            (final_home, final_away, MatchStatus.FINISHED.value, match_id),
+        )
+        updated = await cur.fetchone()
+        await conn.commit()
+        if not updated:
+            return {}
+
+    await update_rankings_for_division(division)
+    return {"id": updated[0], "status": updated[1], "home_score": updated[2], "away_score": updated[3]}
+
+
+async def list_matches_in_progress():
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT m.id,
+                   m.division,
+                   m.status,
+                   m.home_team_id,
+                   m.away_team_id,
+                   ht.name AS home_team,
+                   at.name AS away_team,
+                   COALESCE(m.home_score, 0) AS home_score,
+                   COALESCE(m.away_score, 0) AS away_score,
+                   MIN(s.start_time) AS start_time
+            FROM matches m
+            JOIN teams ht ON ht.id = m.home_team_id
+            JOIN teams at ON at.id = m.away_team_id
+            LEFT JOIN match_slot ms ON ms.match_id = m.id
+            LEFT JOIN slots s ON s.id = ms.slot_id
+            WHERE m.status = %s
+            GROUP BY m.id, m.division, m.status, m.home_team_id, m.away_team_id,
+                     ht.name, at.name, m.home_score, m.away_score
+            ORDER BY m.id
+            """,
+            (MatchStatus.IN_PROGRESS.value,),
+        )
+        rows = await cur.fetchall()
+        return [
+            {
+                "id": row[0],
+                "division": row[1],
+                "status": row[2],
+                "home_team_id": row[3],
+                "away_team_id": row[4],
+                "home_team": row[5],
+                "away_team": row[6],
+                "home_score": row[7],
+                "away_score": row[8],
+                "start_time": row[9],
+            }
+            for row in rows
+        ]
 
 
 async def get_match_previews():

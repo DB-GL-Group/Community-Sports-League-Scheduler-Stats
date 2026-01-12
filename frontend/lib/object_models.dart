@@ -44,7 +44,7 @@ class Match {
   final String status;
   final int homeScore;
   final int awayScore;
-  final DateTime startTime;
+  final DateTime? startTime;
 
   Match({
     required this.divisionName,
@@ -57,6 +57,7 @@ class Match {
   });
 
   factory Match.fromJson(Map<String, dynamic> json) {
+    final startTimeRaw = json['start_time'];
     return Match(
       divisionName: json['division'].toString(),
       homeTeam: Team(
@@ -72,7 +73,7 @@ class Match {
       status: json['status'] as String,
       homeScore: json['home_score'] as int,
       awayScore: json['away_score'] as int,
-      startTime: DateTime.parse(json['start_time'] as String),
+      startTime: startTimeRaw == null ? null : DateTime.parse(startTimeRaw as String),
     );
   }
 }

@@ -10,7 +10,13 @@ from shared.players import (
 from ..schemas.player import PlayerAddRequest
 from ..dependencies.auth import require_role
 from ..schemas.auth import RoleKeyRequest, RoleKeyResponse, UserResponse
-from ..schemas.match import MatchPreviewResponse
+from ..schemas.match import (
+    CardEventRequest,
+    GoalEventRequest,
+    MatchAdminResponse,
+    MatchPreviewResponse,
+    SubstitutionEventRequest,
+)
 from ..schemas.referee import (
     RefereeAvailabilityRequest,
     RefereeAvailabilityResponse,
@@ -31,6 +37,14 @@ from shared.referees import (
     replace_referee_availability,
     get_match_slots_without_referee
 )
+from shared.matches import (
+    add_card_event,
+    add_goal_event,
+    add_substitution_event,
+    finalize_match,
+    list_matches_in_progress,
+)
+from shared.rankings import get_rankings_with_tiebreak
 from shared.teams import (
     add_player,
     create_team,
@@ -412,6 +426,112 @@ async def populate_players_endpoint(
 ):
     created = await populate_players()
     return {"created": len(created)}
+
+
+@router.get("/admin/console/matches", response_model=list[MatchAdminResponse])
+async def list_admin_matches_in_progress(
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    rows = await list_matches_in_progress()
+    return [
+        {
+            "id": row["id"],
+            "division": row["division"],
+            "status": row["status"],
+            "home_team_id": row["home_team_id"],
+            "away_team_id": row["away_team_id"],
+            "home_team": row["home_team"],
+            "away_team": row["away_team"],
+            "home_score": row["home_score"],
+            "away_score": row["away_score"],
+            "start_time": row["start_time"].isoformat()
+            if row.get("start_time") and hasattr(row["start_time"], "isoformat")
+            else None,
+        }
+        for row in rows
+    ]
+
+
+@router.post("/admin/console/matches/{match_id}/goal")
+async def admin_add_goal(
+    match_id: int,
+    payload: GoalEventRequest,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    row = await add_goal_event(
+        match_id,
+        payload.team_id,
+        payload.player_id,
+        payload.minute,
+        payload.is_own_goal,
+    )
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
+    return row
+
+
+@router.post("/admin/console/matches/{match_id}/card")
+async def admin_add_card(
+    match_id: int,
+    payload: CardEventRequest,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    row = await add_card_event(
+        match_id,
+        payload.team_id,
+        payload.player_id,
+        payload.minute,
+        payload.card_type,
+        payload.reason,
+    )
+    if not row:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Card not created")
+    return row
+
+
+@router.post("/admin/console/matches/{match_id}/substitution")
+async def admin_add_substitution(
+    match_id: int,
+    payload: SubstitutionEventRequest,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    row = await add_substitution_event(
+        match_id,
+        payload.team_id,
+        payload.player_out_id,
+        payload.player_in_id,
+        payload.minute,
+    )
+    if not row:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Substitution not created")
+    return row
+
+
+@router.post("/admin/console/matches/{match_id}/finalize")
+async def admin_finalize_match(
+    match_id: int,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    row = await finalize_match(match_id)
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
+    return row
+
+
+@router.get("/admin/console/rankings/{division}")
+async def admin_get_rankings(
+    division: int,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    return await get_rankings_with_tiebreak(division)
+
+
+@router.get("/admin/console/teams/{team_id}/players")
+async def admin_list_team_players(
+    team_id: int,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    return await list_team_players(team_id)
 
 
 @router.post("/admin/role-keys", response_model=RoleKeyResponse)
