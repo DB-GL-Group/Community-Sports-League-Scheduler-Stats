@@ -180,6 +180,7 @@ class Player {
   }
 }
 
+
 class MatchDetail {
   final int id;
   final int division;
@@ -227,6 +228,7 @@ class MatchDetail {
   }
 }
 
+
 class TeamDetail {
   final int id;
   final int division;
@@ -258,6 +260,36 @@ class TeamDetail {
       primaryColor: json['color_primary'] as String,
       secondaryColor: json['color_secondary'] as String,
       players: (json['players'] as List).map((p) => Player.fromJson(p)).toList(),
+    );
+  }
+}
+
+
+class RankingEntry {
+  final int rank;
+  final String team_name;
+  final String team_primary_color;
+  final String team_secondary_color;
+  final int points;
+  final int goal_difference;
+
+  RankingEntry({
+    required this.rank,
+    required this.team_name,
+    required this.team_primary_color,
+    required this.team_secondary_color,
+    required this.points,
+    required this.goal_difference,
+  });
+
+  factory RankingEntry.fromJson(int rank, Map<String, dynamic> json) {
+    return RankingEntry(
+      rank: rank,
+      team_name: json['team_name'] as String,
+      team_primary_color: json['team_primary_color'] as String,
+      team_secondary_color: json['team_secondary_color'] as String,
+      points: json['points'] as int,
+      goal_difference: json['goal_difference'] as int,
     );
   }
 }

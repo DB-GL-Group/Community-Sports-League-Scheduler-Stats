@@ -35,7 +35,7 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
         matches.add(om.RefMatch.fromJson(matchJson));
       }
     } catch (e) {
-      print("Error loading ref matches: $e");
+      throw Exception("Error loading ref matches: $e");
     } finally {
       return Future.value(matches);
     }

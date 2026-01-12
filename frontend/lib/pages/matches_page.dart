@@ -34,7 +34,7 @@ class _MatchesPageState extends State<MatchesPage> {
         matches.add(om.Match.fromJson(matchJson));
       }
     } catch (e) {
-      print(e.toString());
+      throw Exception("Error loading matches: $e");
     } finally {
       return matches;
     }

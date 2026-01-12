@@ -1,3 +1,4 @@
+import 'package:community_sports_league_scheduler/authprovider.dart';
 import 'package:community_sports_league_scheduler/widgets/matchinfotab.dart';
 import 'package:community_sports_league_scheduler/widgets/matchplayerstab.dart';
 import 'package:community_sports_league_scheduler/widgets/matchscoretab.dart';
@@ -35,10 +36,11 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
 
   Future<om.MatchDetail> _loadMatch(ApiRouter apiRouter) async {
     try {
-      final data = await apiRouter.fetchData('matches/${widget.matchId}');
+      final token = context.read<AuthProvider>().user?.access_token ?? '';
+      final data = await apiRouter.fetchData('matches/${widget.matchId}', token: token);
       return om.MatchDetail.fromJson(data);
     } catch (e) {
-      throw Exception('Match not found');
+      throw Exception('Error loading match detail: $e');
     }
   }
 

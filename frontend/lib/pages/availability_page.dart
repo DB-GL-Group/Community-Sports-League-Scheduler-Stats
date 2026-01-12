@@ -43,7 +43,7 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
         _selectedSlotIds.add(slot.id); // pre-select
       }
     } catch (e) {
-      print("Error loading slots: $e");
+      throw Exception("Error loading slots: $e");
     } finally {
       return Future.value([...slots, ...existing]);
     }
