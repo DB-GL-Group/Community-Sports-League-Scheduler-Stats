@@ -112,6 +112,7 @@ async def get_referee_matches(referee_id: int):
             FROM matches m
             JOIN teams ht ON ht.id = m.home_team_id
             JOIN teams at ON at.id = m.away_team_id
+            JOIN match_referees mr ON mr.match_id = m.id
             LEFT JOIN match_slot ms ON ms.match_id = m.id
             LEFT JOIN slots s ON s.id = ms.slot_id
             LEFT JOIN courts c ON c.id = s.court_id
@@ -121,7 +122,7 @@ async def get_referee_matches(referee_id: int):
             GROUP BY m.id, m.division, m.status, ht.name, at.name
             ORDER BY m.id, start_time
             """,
-            (referee_id, referee_id),
+            (referee_id,),
         )
         rows = await cur.fetchall()
         return [
@@ -152,8 +153,7 @@ async def get_match_slots_without_referee():
             JOIN teams ht ON m.home_team_id = ht.id
             JOIN teams at ON m.away_team_id = at.id
             LEFT JOIN match_referees mr ON mr.match_id = m.id
-            WHERE m.main_referee_id IS NULL
-              AND mr.match_id IS NULL
+            WHERE mr.match_id IS NULL
             ORDER BY s.start_time
             """
         )

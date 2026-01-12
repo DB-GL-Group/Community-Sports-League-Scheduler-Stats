@@ -49,7 +49,16 @@ backend-db-conn:
 
 # Flutter setup
 flutter-setup:
-	powershell -NoProfile -ExecutionPolicy Bypass -File scripts/flutter-setup.ps1
+	@OS=$$(uname -s); \
+	if [ "$$OS" = "Darwin" ]; then \
+		bash scripts/flutter-setup.sh; \
+	else \
+		if command -v pwsh >/dev/null 2>&1; then \
+			pwsh -NoProfile -File scripts/flutter-setup.ps1; \
+		else \
+			powershell -NoProfile -ExecutionPolicy Bypass -File scripts/flutter-setup.ps1; \
+		fi; \
+	fi
 
 # Some test requests
 test-signup:

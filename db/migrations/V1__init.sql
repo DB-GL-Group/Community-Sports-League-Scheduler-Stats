@@ -72,7 +72,6 @@ CREATE TABLE matches (
     division        INTEGER NOT NULL,
     home_team_id    INTEGER NOT NULL REFERENCES teams(id),
     away_team_id    INTEGER NOT NULL REFERENCES teams(id),
-    main_referee_id INTEGER REFERENCES referees(person_id),
     status          VARCHAR(20) NOT NULL DEFAULT 'scheduled', -- scheduled, finished, postponed...
     home_score      INTEGER,
     away_score      INTEGER,
