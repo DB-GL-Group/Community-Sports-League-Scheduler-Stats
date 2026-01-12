@@ -20,7 +20,7 @@ class AuthProvider extends ChangeNotifier {
       final data = await apiRouter.fetchData("auth/me", token: access_token);
       user = User.fromJson(data, access_token);
     } catch (e) {
-      error = e.toString();
+      throw Exception("Error loading user: $e");
     } finally {
       isLoading = false;
       notifyListeners();

@@ -269,7 +269,7 @@ async def remove_referee_availability_slot(
 
 
 @router.get("/referee/openslots")
-async def list_referee_availability(current_user: UserResponse = Depends(require_role("REFEREE"))):
+async def list_referee_openslots(current_user: UserResponse = Depends(require_role("REFEREE"))):
     if not current_user.get("person_id"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Referee profile missing")
     rows = await get_match_slots_without_referee()

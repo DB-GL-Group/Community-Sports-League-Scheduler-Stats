@@ -1,5 +1,6 @@
 import 'package:community_sports_league_scheduler/authprovider.dart';
 import 'package:community_sports_league_scheduler/pages/availability_page.dart';
+import 'package:community_sports_league_scheduler/pages/match_detail_page.dart';
 import 'package:community_sports_league_scheduler/router.dart';
 
 import 'package:community_sports_league_scheduler/pages/assignments_page.dart';
@@ -45,6 +46,17 @@ class SportsLeagueScheduler extends StatelessWidget {
           GoRoute(
             path: '/',
             builder: (_, __) => const MatchesPage(),
+          ),
+          GoRoute(
+            path: '/matches/:id',
+            builder: (context, state) {
+              final matchId = int.parse(state.pathParameters['id']!);
+              return MatchDetailPage(matchId: matchId);
+            },
+            redirect: (context, state) {
+              final auth = context.read<AuthProvider>();
+              return auth.isLoggedIn ? null : '/';
+            },
           ),
           GoRoute(
             path: '/rankings',

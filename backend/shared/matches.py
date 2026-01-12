@@ -503,12 +503,15 @@ async def get_match_details(match_id: int):
                    MIN(s.start_time) AS start_time,
                    NOW() AS current_time,
                    COALESCE(p.first_name || ' ' || p.last_name, '') AS main_referee,
-                   COALESCE(m.notes, '') AS notes
+                   COALESCE(m.notes, '') AS notes,
+                   v.name AS venue
             FROM matches m
             JOIN teams ht ON ht.id = m.home_team_id
             JOIN teams at ON at.id = m.away_team_id
             LEFT JOIN match_slot ms ON ms.match_id = m.id
             LEFT JOIN slots s ON s.id = ms.slot_id
+            LEFT JOIN courts c ON c.id = s.court_id
+            LEFT JOIN venues v ON v.id = c.venue_id
             LEFT JOIN match_referees mr ON mr.match_id = m.id
             LEFT JOIN persons p ON p.id = mr.referee_id
             WHERE m.id = %s
@@ -535,6 +538,7 @@ async def get_match_details(match_id: int):
             "current_time": row[8],
             "main_referee": row[9],
             "notes": row[10],
+            "venue": row[11]
         }
 
 async def perform_tie_breaker(home_team_id, away_team_id):
