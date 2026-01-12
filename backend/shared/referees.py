@@ -11,7 +11,7 @@ async def create_referee(person_id):
             VALUES (%s)
             RETURNING person_id
             """,
-            (person_id),
+            (person_id,),
         )
         referee_id = await cur.fetchone()
         await conn.commit()

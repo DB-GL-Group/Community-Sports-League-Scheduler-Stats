@@ -1,5 +1,9 @@
-﻿from fastapi import APIRouter, Depends, HTTPException, status
+﻿
 
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from shared.players import create_player, delete_player_if_orphaned
+from ..schemas.player import PlayerAddRequest
 from ..dependencies.auth import require_role
 from ..schemas.auth import UserResponse
 from ..schemas.match import MatchPreviewResponse
@@ -14,7 +18,7 @@ from ..schemas.fan import (
     PlayerIdRequest,
     TeamIdRequest,
 )
-from ..schemas.teams import TeamRequest, TeamResponse
+from ..schemas.teams import TeamAddRequest, TeamResponse
 from shared.referees import (
     add_referee_availability,
     get_referee_availability,
@@ -22,7 +26,13 @@ from shared.referees import (
     remove_referee_availability,
     replace_referee_availability,
 )
-from shared.teams import add_player, create_team, get_team_by_manager_id, remove_player_from_team
+from shared.teams import (
+    add_player,
+    create_team,
+    get_team_by_manager_id,
+    list_team_players,
+    remove_player_from_team,
+)
 from shared.fans import (
     add_favorite_team,
     add_player_subscription,
@@ -36,6 +46,8 @@ from shared.fans import (
     remove_team_subscription,
     update_notification_settings,
 )
+
+from helper.players import populate_players
 
 router = APIRouter(prefix="/user", tags=["user"])
 
@@ -60,7 +72,7 @@ async def get_team(current_user: UserResponse = Depends(require_role("MANAGER"))
 
 @router.post("/manager/team", response_model=TeamResponse, status_code=status.HTTP_201_CREATED)
 async def add_team(
-    payload: TeamRequest,
+    payload: TeamAddRequest,
     current_user: UserResponse = Depends(require_role("MANAGER")),
 ):
     if not current_user.get("person_id"):
@@ -85,7 +97,7 @@ async def add_team(
 
 @router.post("/manager/team/players", status_code=status.HTTP_201_CREATED)
 async def add_team_player(
-    payload: PlayerIdRequest,
+    payload: PlayerAddRequest,
     current_user: UserResponse = Depends(require_role("MANAGER")),
 ):
     if not current_user.get("person_id"):
@@ -93,7 +105,8 @@ async def add_team_player(
     team = await get_team_by_manager_id(current_user["person_id"])
     if not team:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
-    row = await add_player(payload.player_id, team["id"])
+    player = await create_player(payload.first_name, payload.last_name)
+    row = await add_player(player["id"], team["id"], payload.number)
     if not row:
         return {"status": "exists"}
     return {"status": "created"}
@@ -112,7 +125,20 @@ async def remove_team_player(
     row = await remove_player_from_team(player_id, team["id"])
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Player not found in team")
+    await delete_player_if_orphaned(player_id)
     return {"status": "deleted"}
+
+
+@router.get("/manager/team/players")
+async def list_team_players_endpoint(
+    current_user: UserResponse = Depends(require_role("MANAGER")),
+):
+    if not current_user.get("person_id"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Manager profile missing")
+    team = await get_team_by_manager_id(current_user["person_id"])
+    if not team:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+    return await list_team_players(team["id"])
 
 #=========== REFEREE ===========#
 @router.get("/referee/availability", response_model=list[RefereeAvailabilityResponse])
@@ -300,3 +326,12 @@ async def update_notification_settings_endpoint(
         "notify_match_result": row["notify_match_result"],
         "notify_team_news": row["notify_team_news"],
     }
+
+
+#=========== ADMIN ===========#
+@router.post("/admin/pop_players")
+async def populate_players_endpoint(
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    created = await populate_players()
+    return {"created": len(created)}

@@ -43,7 +43,3 @@ class MatchResponse(BaseModel):
     current_time: str
     main_referee: str
     notes: str
-
-    # preview match
-    # matchs/previews
-    # match/id

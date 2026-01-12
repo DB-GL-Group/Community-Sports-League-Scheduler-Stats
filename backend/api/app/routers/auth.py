@@ -15,7 +15,6 @@ async def signup(payload: SignupRequest):
             payload.first_name,
             payload.last_name,
             payload.email,
-            payload.phone,
             payload.password,
             payload.roles,
         )

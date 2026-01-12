@@ -8,23 +8,34 @@ class ApiRouter {
   final String baseUrl;
 
   Future<dynamic> fetchData(String endpoint, {String method = 'GET', Map<String, dynamic> body = const {}, String token = ''}) async {
+    final headers = <String, String>{
+      "Content-Type": "application/json",
+      if (token.isNotEmpty) "Authorization": "Bearer $token",
+    };
     final response = switch (method) {
-      'GET' => await http.get(Uri.parse('$baseUrl/$endpoint')),
+      'GET' => await http.get(Uri.parse('$baseUrl/$endpoint'), headers: headers),
       'POST' => await http.post(Uri.parse('$baseUrl/$endpoint'),
-        headers: {"Content-Type": "application/json", "Authorization": "Bearer ${token}"},
+        headers: headers,
         body: json.encode(body)
       ),
       'PUT' => await http.put(Uri.parse('$baseUrl/$endpoint'),
-        headers: {"Content-Type": "application/json", "Authorization": "Bearer ${token}"},
+        headers: headers,
         body: json.encode(body)
       ),
-      'DELETE' => await http.delete(Uri.parse('$baseUrl/$endpoint')),
+      'DELETE' => await http.delete(Uri.parse('$baseUrl/$endpoint'), headers: headers),
       String() => throw UnimplementedError(),
     };
     print("statusCode: ${response.statusCode}");
     print("body: ${response.body}");
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.body.isEmpty) {
+        return {};
+      }
+      try {
+        return jsonDecode(response.body);
+      } catch (_) {
+        return {};
+      }
     }
     throw Exception('Failed to load data');
   }

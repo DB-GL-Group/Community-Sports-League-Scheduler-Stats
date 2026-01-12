@@ -12,6 +12,35 @@ async def get_all_teams_id():
         rows = await cur.fetchall()
         return [{"id": row[0]} for row in rows]
 
+async def get_all_valid_teams(min_players: int = 11):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT t.id, t.division, t.name, t.manager_id, t.short_name, t.color_primary, t.color_secondary
+            FROM teams t
+            JOIN player_team pt ON pt.team_id = t.id AND pt.active = TRUE
+            GROUP BY t.id, t.division, t.name, t.manager_id, t.short_name, t.color_primary, t.color_secondary
+            HAVING COUNT(pt.player_id) >= %s
+            ORDER BY t.division, t.name
+            """,
+            (min_players,),
+        )
+        rows = await cur.fetchall()
+        return [
+            {
+                "id": row[0],
+                "division": row[1],
+                "name": row[2],
+                "manager_id": row[3],
+                "short_name": row[4],
+                "color_primary": row[5],
+                "color_secondary": row[6],
+            }
+            for row in rows
+        ]
+
+
 async def get_team_by_manager_id(manager_id: int):
     pool = get_async_pool()
     async with pool.connection() as conn, conn.cursor() as cur:
@@ -63,17 +92,17 @@ async def create_team(division, name, manager_id, short_name, color_primary, col
         }
 
 
-async def add_player(player_id, team_id):
+async def add_player(player_id, team_id, shirt_number):
     pool = get_async_pool()
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
             """
-            INSERT INTO player_team (player_id, team_id)
-            VALUES (%s, %s)
+            INSERT INTO player_team (player_id, team_id, shirt_number)
+            VALUES (%s, %s, %s)
             ON CONFLICT DO NOTHING
             RETURNING player_id, team_id, shirt_number, active
             """,
-            (player_id, team_id),
+            (player_id, team_id, shirt_number),
         )
         player_team = await cur.fetchone()
         await conn.commit()
@@ -103,3 +132,30 @@ async def remove_player_from_team(player_id, team_id):
         if not row:
             return {}
         return {"player_id": row[0], "team_id": row[1]}
+
+
+async def list_team_players(team_id: int):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT p.id, p.first_name, p.last_name, pt.shirt_number
+            FROM player_team pt
+            JOIN persons p ON p.id = pt.player_id
+            WHERE pt.team_id = %s AND pt.active = TRUE
+            ORDER BY p.last_name, p.first_name
+            """,
+            (team_id,),
+        )
+        rows = await cur.fetchall()
+        return [
+            {
+                "id": row[0],
+                "first_name": row[1],
+                "last_name": row[2],
+                "number": row[3],
+            }
+            for row in rows
+        ]
+
+

@@ -13,7 +13,7 @@ class TeamResponse(BaseModel):
     color_secondary: Optional[str] = None
 
 
-class TeamRequest(BaseModel):
+class TeamAddRequest(BaseModel):
     division: int
     name: str
     short_name: Optional[str] = None

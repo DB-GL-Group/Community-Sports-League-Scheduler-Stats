@@ -7,7 +7,6 @@ class SignupRequest(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
-    phone: str
     password: str
     roles: list[str] = ["FAN"]
 
@@ -30,7 +29,6 @@ class PersonResponse(BaseModel):
     id: int
     first_name: str
     last_name: str
-    phone: str | None = None
 
 
 class UserWithPersonResponse(BaseModel):

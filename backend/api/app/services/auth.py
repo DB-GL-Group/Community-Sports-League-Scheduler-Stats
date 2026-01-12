@@ -27,7 +27,6 @@ async def signup(
     first_name: str,
     last_name: str,
     email: str,
-    phone: str,
     password: str,
     roles: list[str],
 ):
@@ -35,7 +34,7 @@ async def signup(
         raise ValueError("Email already used")
     password_hash = argon2.hash(password)
     normalized = [r.upper() for r in roles]
-    return await users.create_user(first_name, last_name, email, phone, password_hash, normalized)
+    return await users.create_user(first_name, last_name, email, password_hash, normalized)
 
 
 def create_access_token(user: dict) -> str:
