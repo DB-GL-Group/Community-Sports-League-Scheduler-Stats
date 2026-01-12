@@ -20,6 +20,23 @@ async def add_court(venue_id, name, surface):
             return {}
         return {"id": court[0], "venue_id": court[1], "name": court[2], "surface": court[3]}
 
+async def get_all_courts():
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT id, venue_id, name, surface
+            FROM courts
+            """
+        )
+        row = await cur.fetchall()
+        return {
+            "id" : row[0],
+            "venue_id" : row[1],
+            "name" : row[2],
+            "surface" : row[3]
+        }
+
 async def generate_slots(court_id, start_date, end_date, slots_per_day=6, slots_length=2):
     if slots_per_day <= 0:
         raise ValueError("slots_per_day must be positive")
