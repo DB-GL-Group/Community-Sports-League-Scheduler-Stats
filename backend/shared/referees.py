@@ -106,20 +106,17 @@ async def get_referee_matches(referee_id: int):
                    m.status,
                    ht.name AS home_team,
                    at.name AS away_team,
-                   MIN(s.start_time) AS start_time,
-                   MAX(s.end_time) AS end_time,
-                   v.name AS venue
+                   COALESCE(m.home_score, 0) AS home_score,
+                   COALESCE(m.away_score, 0) AS away_score,
+                   MIN(s.start_time) AS start_time
             FROM matches m
             JOIN teams ht ON ht.id = m.home_team_id
             JOIN teams at ON at.id = m.away_team_id
             JOIN match_referees mr ON mr.match_id = m.id
             LEFT JOIN match_slot ms ON ms.match_id = m.id
             LEFT JOIN slots s ON s.id = ms.slot_id
-            LEFT JOIN courts c ON c.id = s.court_id
-            LEFT JOIN venues v ON v.id = c.venue_id
-            LEFT JOIN match_referees mr ON mr.match_id = m.id
-            WHERE m.main_referee_id = %s OR mr.referee_id = %s
-            GROUP BY m.id, m.division, m.status, ht.name, at.name
+            WHERE mr.referee_id = %s
+            GROUP BY m.id, m.division, m.status, ht.name, at.name, m.home_score, m.away_score
             ORDER BY m.id, start_time
             """,
             (referee_id,),
