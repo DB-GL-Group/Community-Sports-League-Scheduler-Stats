@@ -49,7 +49,7 @@ async def get_team_details(team_id: int):
             FROM teams
             WHERE id = %s
             """,
-            (team_id)
+            (team_id,),
         )
         row = await cur.fetchone()
         if not row: 

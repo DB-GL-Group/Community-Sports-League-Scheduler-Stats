@@ -51,6 +51,6 @@ async def get_match_details(match_id: int, current_user: UserResponse = Depends(
         "current_time": row["current_time"].isoformat()
         if hasattr(row["current_time"], "isoformat")
         else str(row["current_time"]),
-        "referee_name": row["referee_name"],
+        "main_referee": row["main_referee"],
         "notes": row["notes"],
     }

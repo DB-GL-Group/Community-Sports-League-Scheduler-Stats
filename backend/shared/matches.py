@@ -289,8 +289,8 @@ async def get_match_details(match_id: int):
             SELECT m.id,
                    m.division,
                    m.status,
-                   ht.id AS home_team_id,
-                   at.id AS away_team_id,
+                   m.home_team_id,
+                   m.away_team_id,
                    COALESCE(m.home_score, 0) AS home_score,
                    COALESCE(m.away_score, 0) AS away_score,
                    MIN(s.start_time) AS start_time,
@@ -302,11 +302,11 @@ async def get_match_details(match_id: int):
             JOIN teams at ON at.id = m.away_team_id
             LEFT JOIN match_slot ms ON ms.match_id = m.id
             LEFT JOIN slots s ON s.id = ms.slot_id
-            LEFT JOIN match_referees mr ON mr.match_id = m.match_id
+            LEFT JOIN match_referees mr ON mr.match_id = m.id
             LEFT JOIN persons p ON p.id = mr.referee_id
             WHERE m.id = %s
-            GROUP BY m.id, m.division, m.status, m.home_score, m.away_score, m.notes,
-                     ht.name, at.name, p.first_name, p.last_name
+            GROUP BY m.id, m.division, m.status, m.home_team_id, m.away_team_id,
+                     m.home_score, m.away_score, m.notes, p.first_name, p.last_name
             """,
             (match_id,),
         )
@@ -314,8 +314,8 @@ async def get_match_details(match_id: int):
         if not row:
             return {}
         
-        ht_details = get_team_details(row[3])
-        at_details = get_team_details(row[4])
+        ht_details = await get_team_details(row[3])
+        at_details = await get_team_details(row[4])
         return {
             "id": row[0],
             "division": row[1],
@@ -326,7 +326,7 @@ async def get_match_details(match_id: int):
             "away_score": row[6],
             "start_time": row[7],
             "current_time": row[8],
-            "referee_name": row[9],
+            "main_referee": row[9],
             "notes": row[10],
         }
 
