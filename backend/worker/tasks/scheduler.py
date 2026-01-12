@@ -13,11 +13,11 @@ from worker.tasks.matchGeneretor import generate_matches
 logger = logging.getLogger(__name__)
 
 
-def run_scheduler_job(job_id: str) -> None:
-    asyncio.run(_run_scheduler_job(job_id))
+def run_scheduler_job() -> None:
+    asyncio.run(_run_scheduler_job())
 
 
-async def _run_scheduler_job(job_id: str) -> None:
+async def _run_scheduler_job() -> None:
     await open_async_pool()
     try:
         #Implement scheduler logic
