@@ -4,6 +4,9 @@ class User {
   bool is_active;
   DateTime created_at;
   List<String> roles;
+  int person_id;
+  String first_name;
+  String last_name;
   String access_token;
 
   User({
@@ -12,16 +15,22 @@ class User {
     required this.is_active,
     required this.created_at,
     required this.roles,
+    required this.person_id,
+    required this.first_name,
+    required this.last_name,
     required this.access_token
   });
 
   factory User.fromJson(Map<String, dynamic> json, String access_token) {
     return User(
-      id: json['id'] as int,
-      email: json['email'] as String,
-      is_active: json['is_active'] as bool,
-      created_at: DateTime.parse(json['created_at'] as String),
-      roles: List<String>.from(json['roles']),
+      id: json['user']['id'] as int,
+      email: json['user']['email'] as String,
+      is_active: json['user']['is_active'] as bool,
+      created_at: DateTime.parse(json['user']['created_at'] as String),
+      roles: List<String>.from(json['user']['roles']),
+      person_id: json['person']['id'] as int,
+      first_name: json['person']['first_name'] as String,
+      last_name: json['person']['last_name'] as String,
       access_token: access_token
     );
   }
@@ -49,13 +58,21 @@ class Match {
 
   factory Match.fromJson(Map<String, dynamic> json) {
     return Match(
-      divisionName: json['division_name'] as String,
-      homeTeam: Team.fromJson(json['home_team']),
-      awayTeam: Team.fromJson(json['away_team']),
+      divisionName: json['division'].toString(),
+      homeTeam: Team(
+        name: json['home_team'],
+        primaryColor: json['home_primary_color'],
+        secondaryColor: json['home_secondary_color']
+      ),
+      awayTeam: Team(
+        name: json['away_team'],
+        primaryColor: json['away_primary_color'],
+        secondaryColor: json['away_secondary_color']
+      ),
       status: json['status'] as String,
       homeScore: json['home_score'] as int,
       awayScore: json['away_score'] as int,
-      startTime: DateTime.parse(json['slot_start_time'] as String),
+      startTime: DateTime.parse(json['start_time'] as String),
     );
   }
 }
@@ -72,13 +89,13 @@ class Team {
     required this.secondaryColor,
   });
 
-  factory Team.fromJson(Map<String, dynamic> json) {
-    return Team(
-      name: json['name'] as String,
-      primaryColor: json['color_primary'] as String,
-      secondaryColor: json['color_secondary'] as String,
-    );
-  }
+  // factory Team.fromJson(Map<String, dynamic> json) {
+  //   return Team(
+  //     name: json['name'] as String,
+  //     primaryColor: json['color_primary'] as String,
+  //     secondaryColor: json['color_secondary'] as String,
+  //   );
+  // }
 }
 
 

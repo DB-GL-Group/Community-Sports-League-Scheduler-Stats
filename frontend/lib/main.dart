@@ -23,11 +23,7 @@ void main() => runApp(
         create: (_) => ApiRouter(),
       ),
       ChangeNotifierProvider(
-        create: (context) {
-          final auth = AuthProvider();
-          auth.loadUser(context.read<ApiRouter>());
-          return auth;
-        },
+        create: (context) => AuthProvider(),
       ),
     ],
     child: const SportsLeagueScheduler(),

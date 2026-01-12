@@ -12,6 +12,13 @@ class AvailabilityPage extends StatefulWidget {
   State<StatefulWidget> createState() => _AvailabilityPageState();
 }
 
+/**
+ * WRONG LOGIC
+ * We should be able to select slots that are on the same time, but once the referee is ASSIGNED to a slot,
+ * the overlapping availabilities should be deleted and the assigned slot should be visible, selected and locked
+ * on this page. If there are other slots on the same time as the ASSIGNED slot, they should not be selectable
+ * (locked and not selected)
+ */
 class _AvailabilityPageState extends State<AvailabilityPage> {
   late Future<List<om.Slot>> _slots;
   bool _initialized = false;
