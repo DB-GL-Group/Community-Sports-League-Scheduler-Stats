@@ -4,6 +4,8 @@ from datetime import datetime
 from shared.db import get_async_pool
 from shared.teams import get_all_teams_id
 
+import random
+
 class MatchStatus(str, Enum):
     SCHEDULED = "scheduled"
     IN_PROGRESS = "in_progress"
@@ -333,7 +335,12 @@ async def get_match_details(match_id: int):
             "notes": row[10],
         }
 
-
+async def perform_tie_breaker(home_team_id, away_team_id):
+    winner = int(random.randrange(1, 2))
+    if winner == 1:
+        return home_team_id
+    else:
+        return away_team_id
 
 async def get_match_id_with_scores(match_id):
     pool = get_async_pool()
@@ -361,7 +368,7 @@ async def get_match_winner(match_id):
     if not scores:
         return None
     if scores["home_score"] == scores["away_score"]:
-        return -1
+        return (await perform_tie_breaker(scores["home_team_id", scores["away_team_id"]]))
     elif scores["home_score"] > scores["away_score"]:
         return scores["home_team_id"]
     else:
