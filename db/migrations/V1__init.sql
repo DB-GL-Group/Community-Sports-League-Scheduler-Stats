@@ -35,7 +35,6 @@ CREATE TABLE player_team (
     player_id    INTEGER NOT NULL REFERENCES players(person_id),
     team_id      INTEGER NOT NULL REFERENCES teams(id),
     shirt_number INTEGER,
-    active       BOOLEAN NOT NULL DEFAULT TRUE,
     PRIMARY KEY (player_id, team_id)
 );
 

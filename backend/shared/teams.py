@@ -19,7 +19,7 @@ async def get_all_valid_teams(min_players: int = 11):
             """
             SELECT t.id, t.division, t.name, t.manager_id, t.short_name, t.color_primary, t.color_secondary
             FROM teams t
-            JOIN player_team pt ON pt.team_id = t.id AND pt.active = TRUE
+            JOIN player_team pt ON pt.team_id = t.id
             GROUP BY t.id, t.division, t.name, t.manager_id, t.short_name, t.color_primary, t.color_secondary
             HAVING COUNT(pt.player_id) >= %s
             ORDER BY t.division, t.name
@@ -81,6 +81,7 @@ async def get_team_by_manager_id(manager_id: int):
         row = await cur.fetchone()
         if not row:
             return {}
+        players = await list_team_players(row[0])
         return {
             "id": row[0],
             "division": row[1],
@@ -89,6 +90,7 @@ async def get_team_by_manager_id(manager_id: int):
             "short_name": row[4],
             "color_primary": row[5],
             "color_secondary": row[6],
+            "players": players,
         }
 
 
@@ -118,6 +120,37 @@ async def create_team(division, name, manager_id, short_name, color_primary, col
         }
 
 
+async def update_team(team_id, division, name, short_name, color_primary, color_secondary):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            UPDATE teams
+            SET division = %s,
+                name = %s,
+                short_name = %s,
+                color_primary = %s,
+                color_secondary = %s
+            WHERE id = %s
+            RETURNING id, division, name, manager_id, short_name, color_primary, color_secondary
+            """,
+            (division, name, short_name, color_primary, color_secondary, team_id),
+        )
+        team = await cur.fetchone()
+        await conn.commit()
+        if not team:
+            return {}
+        return {
+            "id": team[0],
+            "division": team[1],
+            "name": team[2],
+            "manager_id": team[3],
+            "short_name": team[4],
+            "color_primary": team[5],
+            "color_secondary": team[6],
+        }
+
+
 async def add_player(player_id, team_id, shirt_number):
     pool = get_async_pool()
     async with pool.connection() as conn, conn.cursor() as cur:
@@ -126,7 +159,7 @@ async def add_player(player_id, team_id, shirt_number):
             INSERT INTO player_team (player_id, team_id, shirt_number)
             VALUES (%s, %s, %s)
             ON CONFLICT DO NOTHING
-            RETURNING player_id, team_id, shirt_number, active
+            RETURNING player_id, team_id, shirt_number
             """,
             (player_id, team_id, shirt_number),
         )
@@ -138,7 +171,6 @@ async def add_player(player_id, team_id, shirt_number):
             "player_id": player_team[0],
             "team_id": player_team[1],
             "shirt_number": player_team[2],
-            "active": player_team[3],
         }
 
 
@@ -168,7 +200,7 @@ async def list_team_players(team_id: int):
             SELECT p.id, p.first_name, p.last_name, pt.shirt_number
             FROM player_team pt
             JOIN persons p ON p.id = pt.player_id
-            WHERE pt.team_id = %s AND pt.active = TRUE
+            WHERE pt.team_id = %s
             ORDER BY p.last_name, p.first_name
             """,
             (team_id,),

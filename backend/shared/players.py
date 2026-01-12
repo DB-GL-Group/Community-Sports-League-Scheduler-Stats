@@ -21,6 +21,32 @@ async def create_player(first_name: str, last_name: str):
         return {"id": player_id[0]}
 
 
+async def list_available_players(team_id: int):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT p.id, p.first_name, p.last_name
+            FROM players pl
+            JOIN persons p ON p.id = pl.person_id
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM teams t
+                JOIN player_team pt ON pt.team_id = t.id
+                WHERE pt.player_id = pl.person_id
+                  AND t.division = (SELECT division FROM teams WHERE id = %s)
+            )
+            ORDER BY p.last_name, p.first_name
+            """,
+            (team_id,),
+        )
+        rows = await cur.fetchall()
+        return [
+            {"id": row[0], "first_name": row[1], "last_name": row[2]}
+            for row in rows
+        ]
+
+
 async def delete_player_if_orphaned(player_id: int):
     pool = get_async_pool()
     async with pool.connection() as conn, conn.cursor() as cur:

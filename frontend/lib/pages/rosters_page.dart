@@ -17,6 +17,22 @@ class _RostersPageState extends State<RostersPage> {
   late Future<List<om.Player>> _players;
   late Future<Map<String, dynamic>?> _team;
   bool _initialized = false;
+  final List<Map<String, String>> _colorOptions = const [
+    {"name": "Red", "value": "#D32F2F"},
+    {"name": "Blue", "value": "#1976D2"},
+    {"name": "Green", "value": "#388E3C"},
+    {"name": "Yellow", "value": "#FBC02D"},
+    {"name": "Orange", "value": "#F57C00"},
+    {"name": "Purple", "value": "#7B1FA2"},
+    {"name": "Black", "value": "#212121"},
+    {"name": "White", "value": "#FFFFFF"},
+    {"name": "Gray", "value": "#616161"},
+  ];
+
+  Color _hexToColor(String hex) {
+    final cleanHex = hex.replaceAll('#', '');
+    return Color(int.parse('FF$cleanHex', radix: 16));
+  }
 
   @override
   void didChangeDependencies() {
@@ -60,6 +76,29 @@ class _RostersPageState extends State<RostersPage> {
     }
   }
 
+  Future<List<om.Player>> _loadFreePlayers(ApiRouter apiRouter) async {
+    final token = context.read<AuthProvider>().user?.access_token ?? '';
+    if (token.isEmpty) return [];
+    try {
+      final data = await apiRouter.fetchData(
+        "user/manager/team/players/available",
+        token: token,
+      );
+      final rows = data is List ? data : [];
+      return rows.map<om.Player>((row) {
+        final map = row as Map<String, dynamic>;
+        return om.Player(
+          id: map['id'] as int,
+          firstName: (map['first_name'] ?? map['firstName']) as String,
+          lastName: (map['last_name'] ?? map['lastName']) as String,
+          number: null,
+        );
+      }).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   Future<void> _refreshPlayers() async {
     final team = await _loadTeam(context.read<ApiRouter>());
     final players = await _loadPlayers(context.read<ApiRouter>());
@@ -73,114 +112,331 @@ class _RostersPageState extends State<RostersPage> {
     final nameController = TextEditingController();
     final divisionController = TextEditingController();
     final shortNameController = TextEditingController();
-    final primaryColorController = TextEditingController();
-    final secondaryColorController = TextEditingController();
     final apiRouter = context.read<ApiRouter>();
     final messenger = ScaffoldMessenger.of(context);
+    String primaryColorValue = '';
+    String secondaryColorValue = '';
 
     await showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Create Team'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Team Name'),
-              ),
-              TextField(
-                controller: divisionController,
-                decoration: const InputDecoration(labelText: 'Division'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: shortNameController,
-                decoration: const InputDecoration(labelText: 'Short Name'),
-              ),
-              TextField(
-                controller: primaryColorController,
-                decoration: const InputDecoration(labelText: 'Primary Color'),
-              ),
-              TextField(
-                controller: secondaryColorController,
-                decoration: const InputDecoration(labelText: 'Secondary Color'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final division = int.tryParse(divisionController.text.trim());
-                if (nameController.text.trim().isEmpty || division == null) return;
-
-                final token = context.read<AuthProvider>().user?.access_token ?? '';
-                if (token.isEmpty) {
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text("You must be logged in")),
-                  );
-                  return;
-                }
-
-                try {
-                  final createdTeam = await apiRouter.fetchData(
-                    "user/manager/team",
-                    method: 'POST',
-                    token: token,
-                    body: {
-                      'name': nameController.text.trim(),
-                      'division': division,
-                      'short_name': shortNameController.text.trim().isEmpty
-                          ? null
-                          : shortNameController.text.trim(),
-                      'color_primary': primaryColorController.text.trim().isEmpty
-                          ? null
-                          : primaryColorController.text.trim(),
-                      'color_secondary': secondaryColorController.text.trim().isEmpty
-                          ? null
-                          : secondaryColorController.text.trim(),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Create Team'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: 'Team Name'),
+                  ),
+                  TextField(
+                    controller: divisionController,
+                    decoration: const InputDecoration(labelText: 'Division'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  TextField(
+                    controller: shortNameController,
+                    decoration: const InputDecoration(labelText: 'Short Name'),
+                  ),
+                  DropdownButtonFormField<String>(
+                    value: primaryColorValue,
+                    items: [
+                      const DropdownMenuItem<String>(
+                        value: '',
+                        child: Text('None'),
+                      ),
+                      for (final color in _colorOptions)
+                        DropdownMenuItem<String>(
+                          value: color['value'],
+                          child: Text('${color['name']} (${color['value']})'),
+                        ),
+                    ],
+                    onChanged: (value) {
+                      setDialogState(() {
+                        primaryColorValue = value ?? '';
+                      });
                     },
-                  );
-                  if (!mounted) return;
-                  Navigator.pop(context);
-                  setState(() {
-                    _team = createdTeam is Map<String, dynamic>
-                        ? Future.value(createdTeam)
-                        : _loadTeam(apiRouter);
-                    _players = _loadPlayers(apiRouter);
-                  });
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text("Team created")),
-                  );
-                  return;
-                } catch (_) {
-                  final team = await _loadTeam(apiRouter);
-                  if (!mounted) return;
-                  if (team != null) {
-                    Navigator.pop(context);
-                    setState(() {
-                      _team = Future.value(team);
-                      _players = _loadPlayers(apiRouter);
-                    });
-                    messenger.showSnackBar(
-                      const SnackBar(content: Text("Team created")),
-                    );
-                    return;
-                  }
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text("Failed to create team")),
-                  );
-                  return;
-                }
-              },
-              child: const Text('Create'),
-            ),
-          ],
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Primary Color',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: secondaryColorValue,
+                    items: [
+                      const DropdownMenuItem<String>(
+                        value: '',
+                        child: Text('None'),
+                      ),
+                      for (final color in _colorOptions)
+                        DropdownMenuItem<String>(
+                          value: color['value'],
+                          child: Text('${color['name']} (${color['value']})'),
+                        ),
+                    ],
+                    onChanged: (value) {
+                      setDialogState(() {
+                        secondaryColorValue = value ?? '';
+                      });
+                    },
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Secondary Color',
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final division = int.tryParse(divisionController.text.trim());
+                    if (nameController.text.trim().isEmpty || division == null) return;
+
+                    final token = context.read<AuthProvider>().user?.access_token ?? '';
+                    if (token.isEmpty) {
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text("You must be logged in")),
+                      );
+                      return;
+                    }
+
+                    try {
+                      final createdTeam = await apiRouter.fetchData(
+                        "user/manager/team",
+                        method: 'POST',
+                        token: token,
+                        body: {
+                          'name': nameController.text.trim(),
+                          'division': division,
+                          'short_name': shortNameController.text.trim().isEmpty
+                              ? null
+                              : shortNameController.text.trim(),
+                          'color_primary': primaryColorValue.isEmpty ? null : primaryColorValue,
+                          'color_secondary': secondaryColorValue.isEmpty ? null : secondaryColorValue,
+                        },
+                      );
+                      if (!mounted) return;
+                      Navigator.pop(context);
+                      setState(() {
+                        _team = createdTeam is Map<String, dynamic>
+                            ? Future.value(createdTeam)
+                            : _loadTeam(apiRouter);
+                        _players = _loadPlayers(apiRouter);
+                      });
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text("Team created")),
+                      );
+                      return;
+                    } catch (_) {
+                      final team = await _loadTeam(apiRouter);
+                      if (!mounted) return;
+                      if (team != null) {
+                        Navigator.pop(context);
+                        setState(() {
+                          _team = Future.value(team);
+                          _players = _loadPlayers(apiRouter);
+                        });
+                        messenger.showSnackBar(
+                          const SnackBar(content: Text("Team created")),
+                        );
+                        return;
+                      }
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text("Failed to create team")),
+                      );
+                      return;
+                    }
+                  },
+                  child: const Text('Create'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _editTeam(Map<String, dynamic> team) async {
+    final nameController = TextEditingController(text: team['name']?.toString() ?? '');
+    final divisionController = TextEditingController(text: team['division']?.toString() ?? '');
+    final shortNameController = TextEditingController(text: team['short_name']?.toString() ?? '');
+    final apiRouter = context.read<ApiRouter>();
+    final messenger = ScaffoldMessenger.of(context);
+    String primaryColorValue = team['color_primary']?.toString() ?? '';
+    String secondaryColorValue = team['color_secondary']?.toString() ?? '';
+    final colorValues = _colorOptions.map((c) => c['value']).whereType<String>().toSet();
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Edit Team'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: 'Team Name'),
+                  ),
+                  TextField(
+                    controller: divisionController,
+                    decoration: const InputDecoration(labelText: 'Division'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  TextField(
+                    controller: shortNameController,
+                    decoration: const InputDecoration(labelText: 'Short Name'),
+                  ),
+                  DropdownButtonFormField<String>(
+                    value: primaryColorValue,
+                    items: [
+                      const DropdownMenuItem<String>(
+                        value: '',
+                        child: Text('None'),
+                      ),
+                      if (primaryColorValue.isNotEmpty && !colorValues.contains(primaryColorValue))
+                        DropdownMenuItem<String>(
+                          value: primaryColorValue,
+                          child: const Text('Current color'),
+                        ),
+                      for (final color in _colorOptions)
+                        DropdownMenuItem<String>(
+                          value: color['value'],
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: _hexToColor(color['value']!),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text('${color['name']}'),
+                            ],
+                          ),
+                        ),
+                    ],
+                    onChanged: (value) {
+                      setDialogState(() {
+                        primaryColorValue = value ?? '';
+                      });
+                    },
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Primary Color',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: secondaryColorValue,
+                    items: [
+                      const DropdownMenuItem<String>(
+                        value: '',
+                        child: Text('None'),
+                      ),
+                      if (secondaryColorValue.isNotEmpty && !colorValues.contains(secondaryColorValue))
+                        DropdownMenuItem<String>(
+                          value: secondaryColorValue,
+                          child: const Text('Current color'),
+                        ),
+                      for (final color in _colorOptions)
+                        DropdownMenuItem<String>(
+                          value: color['value'],
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: _hexToColor(color['value']!),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text('${color['name']}'),
+                            ],
+                          ),
+                        ),
+                    ],
+                    onChanged: (value) {
+                      setDialogState(() {
+                        secondaryColorValue = value ?? '';
+                      });
+                    },
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Secondary Color',
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final division = int.tryParse(divisionController.text.trim());
+                    if (nameController.text.trim().isEmpty || division == null) return;
+
+                    final token = context.read<AuthProvider>().user?.access_token ?? '';
+                    if (token.isEmpty) {
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text("You must be logged in")),
+                      );
+                      return;
+                    }
+
+                    try {
+                      final updatedTeam = await apiRouter.fetchData(
+                        "user/manager/team",
+                        method: 'PUT',
+                        token: token,
+                        body: {
+                          'name': nameController.text.trim(),
+                          'division': division,
+                          'short_name': shortNameController.text.trim().isEmpty
+                              ? null
+                              : shortNameController.text.trim(),
+                          'color_primary': primaryColorValue.isEmpty ? null : primaryColorValue,
+                          'color_secondary': secondaryColorValue.isEmpty ? null : secondaryColorValue,
+                        },
+                      );
+                      if (!mounted) return;
+                      Navigator.pop(context);
+                      setState(() {
+                        _team = updatedTeam is Map<String, dynamic>
+                            ? Future.value(updatedTeam)
+                            : _loadTeam(apiRouter);
+                        _players = _loadPlayers(apiRouter);
+                      });
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text("Team updated")),
+                      );
+                    } catch (_) {
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text("Failed to update team")),
+                      );
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -217,85 +473,161 @@ class _RostersPageState extends State<RostersPage> {
     final numberController = TextEditingController();
     final apiRouter = context.read<ApiRouter>();
     final messenger = ScaffoldMessenger.of(context);
+    final freePlayersFuture = _loadFreePlayers(apiRouter);
+    bool useExisting = true;
+    int? selectedPlayerId;
 
     await showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Add Player'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: firstNameController,
-                decoration: const InputDecoration(labelText: 'First Name'),
-              ),
-              TextField(
-                controller: lastNameController,
-                decoration: const InputDecoration(labelText: 'Last Name'),
-              ),
-              TextField(
-                controller: numberController,
-                decoration: const InputDecoration(labelText: 'Shirt Number'),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final number = int.tryParse(numberController.text.trim());
-                final firstName = firstNameController.text.trim();
-                final lastName = lastNameController.text.trim();
-                final teamPlayers = await _players;
-                if (firstName.isEmpty || lastName.isEmpty) return;
-                if (number == null || teamPlayers.any((p) => p.number == number)) return;
-
-                try {
-                  final token = context.read<AuthProvider>().user?.access_token ?? '';
-                  if (token.isEmpty) {
-                    messenger.showSnackBar(
-                      const SnackBar(content: Text("You must be logged in")),
-                    );
-                    return;
-                  }
-                  final teamData = await apiRouter.fetchData(
-                    "user/manager/team",
-                    token: token,
-                  );
-                  final teamId = teamData['id'] as int?;
-                  if (teamId == null) {
-                    throw Exception("Team not found");
-                  }
-                  await apiRouter.fetchData(
-                    "user/manager/team/players",
-                    method: 'POST',
-                    body: {
-                      'first_name': firstName,
-                      'last_name': lastName,
-                      'number': number.toString(),
-                      'team_id': teamId,
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Add Player'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RadioListTile<bool>(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Select existing player'),
+                    value: true,
+                    groupValue: useExisting,
+                    onChanged: (value) {
+                      setDialogState(() {
+                        useExisting = value ?? true;
+                      });
                     },
-                    token: token,
-                  );
-                  Navigator.pop(context);
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text("Player added")),
-                  );
-                  _refreshPlayers();
-                } catch (e) {
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text("Failed to add player")),
-                  );
-                }
-              },
-              child: const Text('Add'),
-            ),
-          ],
+                  ),
+                  if (useExisting)
+                    FutureBuilder<List<om.Player>>(
+                      future: freePlayersFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (snapshot.hasError) {
+                          return const Center(child: Text('Error loading players'));
+                        }
+                        final players = snapshot.data ?? [];
+                        if (players.isEmpty) {
+                          return const Text('No available players');
+                        }
+                        selectedPlayerId ??= players.first.id;
+                        return DropdownButton<int>(
+                          value: selectedPlayerId,
+                          items: [
+                            for (var p in players)
+                              DropdownMenuItem<int>(
+                                value: p.id,
+                                child: Text('${p.firstName} ${p.lastName}'),
+                              )
+                          ],
+                          onChanged: (newValue) {
+                            if (newValue == null) return;
+                            setDialogState(() {
+                              selectedPlayerId = newValue;
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  const SizedBox(height: 10),
+                  RadioListTile<bool>(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Create new player'),
+                    value: false,
+                    groupValue: useExisting,
+                    onChanged: (value) {
+                      setDialogState(() {
+                        useExisting = value ?? false;
+                      });
+                    },
+                  ),
+                  if (!useExisting)
+                    Column(
+                      children: [
+                        TextField(
+                          controller: firstNameController,
+                          decoration: const InputDecoration(labelText: 'First Name'),
+                        ),
+                        TextField(
+                          controller: lastNameController,
+                          decoration: const InputDecoration(labelText: 'Last Name'),
+                        ),
+                      ],
+                    ),
+                  TextField(
+                    controller: numberController,
+                    decoration: const InputDecoration(labelText: 'Shirt Number'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final number = int.tryParse(numberController.text.trim());
+                    final teamPlayers = await _players;
+                    if (number == null || teamPlayers.any((p) => p.number == number)) return;
+
+                    if (!useExisting) {
+                      final firstName = firstNameController.text.trim();
+                      final lastName = lastNameController.text.trim();
+                      if (firstName.isEmpty || lastName.isEmpty) return;
+                    }
+
+                    try {
+                      final token = context.read<AuthProvider>().user?.access_token ?? '';
+                      if (token.isEmpty) {
+                        messenger.showSnackBar(
+                          const SnackBar(content: Text("You must be logged in")),
+                        );
+                        return;
+                      }
+                      final teamData = await apiRouter.fetchData(
+                        "user/manager/team",
+                        token: token,
+                      );
+                      final teamId = teamData['id'] as int?;
+                      if (teamId == null) {
+                        throw Exception("Team not found");
+                      }
+                      final body = <String, dynamic>{
+                        'number': number,
+                        'team_id': teamId,
+                      };
+                      if (useExisting) {
+                        body['player_id'] = selectedPlayerId;
+                      } else {
+                        body['first_name'] = firstNameController.text.trim();
+                        body['last_name'] = lastNameController.text.trim();
+                      }
+                      await apiRouter.fetchData(
+                        "user/manager/team/players",
+                        method: 'POST',
+                        body: body,
+                        token: token,
+                      );
+                      Navigator.pop(context);
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text("Player added")),
+                      );
+                      _refreshPlayers();
+                    } catch (e) {
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text("Failed to add player")),
+                      );
+                    }
+                  },
+                  child: const Text('Add'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -357,23 +689,106 @@ class _RostersPageState extends State<RostersPage> {
 
                 final players = snapshot.data ?? [];
 
-                if (players.isEmpty) {
-                  return const Center(child: Text('No players in your team'));
-                }
-
-                return RefreshIndicator(
-                  onRefresh: _refreshPlayers,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: players.length,
-                    itemBuilder: (context, index) {
-                      final player = players[index];
-                      return PlayerCard(
-                        player: player,
-                        onDelete: () => _deletePlayer(player.id),
-                      );
-                    },
-                  ),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  team['name']?.toString() ?? 'Team',
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: 'Edit team',
+                                  onPressed: () => _editTeam(team),
+                                  icon: const Icon(Icons.edit),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text('Division: ${team['division'] ?? '-'}'),
+                            if ((team['short_name'] ?? '').toString().isNotEmpty)
+                              Text('Short name: ${team['short_name']}'),
+                            if ((team['color_primary'] ?? '').toString().isNotEmpty ||
+                                (team['color_secondary'] ?? '').toString().isNotEmpty)
+                              const Text('Colors:'),
+                            if ((team['color_primary'] ?? '').toString().isNotEmpty ||
+                                (team['color_secondary'] ?? '').toString().isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Row(
+                                  children: [
+                                    if ((team['color_primary'] ?? '').toString().isNotEmpty)
+                                      Container(
+                                        width: 14,
+                                        height: 14,
+                                        decoration: BoxDecoration(
+                                          color: _hexToColor(team['color_primary'].toString()),
+                                          borderRadius: BorderRadius.circular(7),
+                                        ),
+                                      ),
+                                    if ((team['color_primary'] ?? '').toString().isNotEmpty)
+                                      const SizedBox(width: 8),
+                                    if ((team['color_primary'] ?? '').toString().isNotEmpty)
+                                      const Text('Primary'),
+                                    if ((team['color_primary'] ?? '').toString().isNotEmpty &&
+                                        (team['color_secondary'] ?? '').toString().isNotEmpty)
+                                      const SizedBox(width: 16),
+                                    if ((team['color_secondary'] ?? '').toString().isNotEmpty)
+                                      Container(
+                                        width: 14,
+                                        height: 14,
+                                        decoration: BoxDecoration(
+                                          color: _hexToColor(team['color_secondary'].toString()),
+                                          borderRadius: BorderRadius.circular(7),
+                                        ),
+                                      ),
+                                    if ((team['color_secondary'] ?? '').toString().isNotEmpty)
+                                      const SizedBox(width: 8),
+                                    if ((team['color_secondary'] ?? '').toString().isNotEmpty)
+                                      const Text('Secondary'),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: players.isEmpty
+                          ? const Center(child: Text('No players in your team'))
+                          : RefreshIndicator(
+                              onRefresh: _refreshPlayers,
+                              child: ListView.builder(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: players.length,
+                                itemBuilder: (context, index) {
+                                  final player = players[index];
+                                  return PlayerCard(
+                                    player: player,
+                                    onDelete: () => _deletePlayer(player.id),
+                                  );
+                                },
+                              ),
+                            ),
+                    ),
+                  ],
                 );
               },
             );

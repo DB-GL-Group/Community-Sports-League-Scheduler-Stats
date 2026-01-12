@@ -2,7 +2,11 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from shared.players import create_player, delete_player_if_orphaned
+from shared.players import (
+    create_player,
+    delete_player_if_orphaned,
+    list_available_players,
+)
 from ..schemas.player import PlayerAddRequest
 from ..dependencies.auth import require_role
 from ..schemas.auth import RoleKeyRequest, RoleKeyResponse, UserResponse
@@ -18,7 +22,7 @@ from ..schemas.fan import (
     PlayerIdRequest,
     TeamIdRequest,
 )
-from ..schemas.teams import TeamAddRequest, TeamResponse
+from ..schemas.teams import TeamAddRequest, TeamResponse, TeamUpdateRequest
 from shared.referees import (
     add_referee_availability,
     get_referee_availability,
@@ -32,6 +36,7 @@ from shared.teams import (
     get_team_by_manager_id,
     list_team_players,
     remove_player_from_team,
+    update_team,
 )
 from shared.fans import (
     add_favorite_team,
@@ -78,6 +83,7 @@ async def get_team(current_user: UserResponse = Depends(require_role("MANAGER"))
         "short_name": team["short_name"],
         "color_primary": team["color_primary"],
         "color_secondary": team["color_secondary"],
+        "players": team.get("players", []),
     }
 
 @router.post("/manager/team", response_model=TeamResponse, status_code=status.HTTP_201_CREATED)
@@ -103,6 +109,40 @@ async def add_team(
         "short_name": team["short_name"],
         "color_primary": team["color_primary"],
         "color_secondary": team["color_secondary"],
+        "players": [],
+    }
+
+
+@router.put("/manager/team", response_model=TeamResponse)
+async def update_team_info(
+    payload: TeamUpdateRequest,
+    current_user: UserResponse = Depends(require_role("MANAGER")),
+):
+    if not current_user.get("person_id"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Manager profile missing")
+    team = await get_team_by_manager_id(current_user["person_id"])
+    if not team:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+    updated = await update_team(
+        team["id"],
+        payload.division if payload.division is not None else team["division"],
+        payload.name if payload.name is not None else team["name"],
+        payload.short_name if payload.short_name is not None else team["short_name"],
+        payload.color_primary if payload.color_primary is not None else team["color_primary"],
+        payload.color_secondary if payload.color_secondary is not None else team["color_secondary"],
+    )
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Team update failed")
+    players = await list_team_players(updated["id"])
+    return {
+        "id": updated["id"],
+        "division": updated["division"],
+        "name": updated["name"],
+        "manager_id": updated["manager_id"],
+        "short_name": updated["short_name"],
+        "color_primary": updated["color_primary"],
+        "color_secondary": updated["color_secondary"],
+        "players": players,
     }
 
 @router.post("/manager/team/players", status_code=status.HTTP_201_CREATED)
@@ -115,8 +155,14 @@ async def add_team_player(
     team = await get_team_by_manager_id(current_user["person_id"])
     if not team:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
-    player = await create_player(payload.first_name, payload.last_name)
-    row = await add_player(player["id"], team["id"], payload.number)
+    if payload.player_id:
+        player_id = payload.player_id
+    else:
+        if not payload.first_name or not payload.last_name:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing player name")
+        player = await create_player(payload.first_name, payload.last_name)
+        player_id = player["id"]
+    row = await add_player(player_id, team["id"], payload.number)
     if not row:
         return {"status": "exists"}
     return {"status": "created"}
@@ -149,6 +195,18 @@ async def list_team_players_endpoint(
     if not team:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
     return await list_team_players(team["id"])
+
+
+@router.get("/manager/team/players/available")
+async def list_available_team_players_endpoint(
+    current_user: UserResponse = Depends(require_role("MANAGER")),
+):
+    if not current_user.get("person_id"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Manager profile missing")
+    team = await get_team_by_manager_id(current_user["person_id"])
+    if not team:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+    return await list_available_players(team["id"])
 
 #=========== REFEREE ===========#
 @router.get("/referee/availability", response_model=list[RefereeAvailabilityResponse])
