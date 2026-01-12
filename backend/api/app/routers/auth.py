@@ -17,6 +17,7 @@ async def signup(payload: SignupRequest):
             payload.email,
             payload.password,
             payload.roles,
+            payload.role_keys,
         )
         return user
     except ValueError as exc:

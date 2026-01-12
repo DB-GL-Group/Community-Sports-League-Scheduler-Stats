@@ -8,7 +8,7 @@ from shared.db import close_async_pool, open_async_pool
 from shared.managers import create_manager
 from shared.matches import addScore, add_match, get_all_matches, schedule_match, get_match_details
 from shared.venues import add_venue
-from tasks.matchGeneretor import generate_matches
+from worker.tasks.matchGeneretor import generate_matches
 
 logger = logging.getLogger(__name__)
 

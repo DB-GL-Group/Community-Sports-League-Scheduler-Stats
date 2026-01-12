@@ -9,6 +9,7 @@ class SignupRequest(BaseModel):
     email: EmailStr
     password: str
     roles: list[str] = ["FAN"]
+    role_keys: dict[str, str] | None = None
 
 
 class LoginRequest(BaseModel):
@@ -40,3 +41,12 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+class RoleKeyRequest(BaseModel):
+    role: str
+
+
+class RoleKeyResponse(BaseModel):
+    role: str
+    key: str

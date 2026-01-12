@@ -192,6 +192,16 @@ CREATE TABLE roles (
     name VARCHAR(50) NOT NULL UNIQUE   -- 'FAN', 'MANAGER', 'REFEREE', 'ADMIN', ...
 );
 
+CREATE TABLE role_invite_keys (
+    id         SERIAL PRIMARY KEY,
+    role_name  VARCHAR(50) NOT NULL REFERENCES roles(name) ON DELETE CASCADE,
+    token      VARCHAR(128) NOT NULL UNIQUE,
+    created_by INTEGER REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    used_by    INTEGER REFERENCES users(id),
+    used_at    TIMESTAMPTZ
+);
+
 CREATE TABLE user_roles (
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role_id INTEGER NOT NULL REFERENCES roles(id),

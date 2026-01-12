@@ -79,6 +79,22 @@ class NavBar extends StatelessWidget {
       ]);
     }
 
+    // Admin
+    if (auth.hasRole('ADMIN')) {
+      navbarElements.addAll([
+        Divider(),
+        ListTile(
+          title: Text('Admin', style: TextStyle(fontWeight: FontWeight.bold)),
+          contentPadding: EdgeInsets.only(left: 8),
+        ),
+        ListTile(
+          leading: Icon(Icons.vpn_key),
+          title: Text('Role Keys'),
+          onTap: () => context.go('/admin/role-keys'),
+        ),
+      ]);
+    }
+
     // Sign in / Sign out
     if (!auth.isLoggedIn) {
       navbarElements.addAll([
@@ -87,6 +103,11 @@ class NavBar extends StatelessWidget {
           leading: Icon(Icons.login),
           title: Text('Log in'),
           onTap: () => context.go('/login'),
+        ),
+        ListTile(
+          leading: Icon(Icons.person_add),
+          title: Text('Sign up'),
+          onTap: () => context.go('/signup'),
         )
       ]);
     } else {

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from shared.players import create_player, delete_player_if_orphaned
 from ..schemas.player import PlayerAddRequest
 from ..dependencies.auth import require_role
-from ..schemas.auth import UserResponse
+from ..schemas.auth import RoleKeyRequest, RoleKeyResponse, UserResponse
 from ..schemas.match import MatchPreviewResponse
 from ..schemas.referee import (
     RefereeAvailabilityRequest,
@@ -46,6 +46,7 @@ from shared.fans import (
     remove_team_subscription,
     update_notification_settings,
 )
+from shared.role_keys import create_role_key
 
 from helper.players import populate_players
 
@@ -335,3 +336,19 @@ async def populate_players_endpoint(
 ):
     created = await populate_players()
     return {"created": len(created)}
+
+
+@router.post("/admin/role-keys", response_model=RoleKeyResponse)
+async def create_role_key_endpoint(
+    payload: RoleKeyRequest,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    role = payload.role.upper()
+    if role == "ADMIN":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Admin keys are not allowed")
+    if role not in ("MANAGER", "REFEREE"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role key only for MANAGER or REFEREE")
+    created = await create_role_key(role, current_user["id"])
+    if not created:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Key generation failed")
+    return {"role": created["role_name"], "key": created["token"]}
