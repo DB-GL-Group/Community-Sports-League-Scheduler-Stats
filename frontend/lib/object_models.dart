@@ -101,23 +101,62 @@ class Team {
 
 class Slot {
   final int id;
-  final String court;
+  final String venue;
   final DateTime startTime;
   final DateTime endTime;
+  final String match;
 
   Slot({
     required this.id,
-    required this.court,
+    required this.venue,
     required this.startTime,
     required this.endTime,
+    required this.match
   });
 
   factory Slot.fromJson(Map<String, dynamic> json) {
     return Slot(
       id: json['id'] as int,
-      court: json['court'] as String,
+      venue: json['venue'] as String,
       startTime: DateTime.parse(json['start_time'] as String),
       endTime: DateTime.parse(json['end_time'] as String),
+      match: json['match'] as String
+    );
+  }
+}
+
+
+class RefMatch {
+  final int id;
+  final int division;
+  final String status;
+  final String home_team;
+  final String away_team;
+  final DateTime startTime;
+  final DateTime endTime;
+  final String venue;
+
+  RefMatch({
+    required this.id,
+    required this.division,
+    required this.status,
+    required this.home_team,
+    required this.away_team,
+    required this.startTime,
+    required this.endTime,
+    required this.venue,
+  });
+
+  factory RefMatch.fromJson(Map<String, dynamic> json) {
+    return RefMatch(
+      id: json['id'] as int,
+      division: json['division'] as int,
+      status: json['status'] as String,
+      home_team: json['home_team'] as String,
+      away_team: json['away_team'] as String,
+      startTime: DateTime.parse(json['start_time'] as String),
+      endTime: DateTime.parse(json['end_time'] as String),
+      venue: json['venue'] as String,
     );
   }
 }

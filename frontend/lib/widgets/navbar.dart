@@ -68,7 +68,6 @@ class NavBar extends StatelessWidget {
         ListTile(
           leading: Icon(Icons.notifications),
           title: Text('Assignments'),
-          trailing: Text('2'),
           onTap: () => context.go('/assignments'),
         ),
         ListTile(

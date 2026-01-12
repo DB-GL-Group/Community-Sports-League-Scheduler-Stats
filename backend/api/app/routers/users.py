@@ -29,6 +29,7 @@ from shared.referees import (
     get_referee_matches,
     remove_referee_availability,
     replace_referee_availability,
+    get_match_slots_without_referee
 )
 from shared.teams import (
     add_player,
@@ -251,6 +252,14 @@ async def remove_referee_availability_slot(
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Availability not found")
     return {"status": "deleted"}
+
+
+@router.get("/referee/openslots")
+async def list_referee_availability(current_user: UserResponse = Depends(require_role("REFEREE"))):
+    if not current_user.get("person_id"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Referee profile missing")
+    rows = await get_match_slots_without_referee()
+    return rows
 
 
 @router.get("/referee/matches", response_model=list[MatchPreviewResponse])
