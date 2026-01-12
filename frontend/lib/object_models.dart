@@ -38,6 +38,7 @@ class User {
 
 
 class Match {
+  final int id;
   final String divisionName;
   final Team homeTeam;
   final Team awayTeam;
@@ -47,6 +48,7 @@ class Match {
   final DateTime startTime;
 
   Match({
+    required this.id,
     required this.divisionName,
     required this.homeTeam,
     required this.awayTeam,
@@ -58,6 +60,7 @@ class Match {
 
   factory Match.fromJson(Map<String, dynamic> json) {
     return Match(
+      id: json['id'] as int,
       divisionName: json['division'].toString(),
       homeTeam: Team(
         name: json['home_team'],
@@ -88,14 +91,6 @@ class Team {
     required this.primaryColor,
     required this.secondaryColor,
   });
-
-  // factory Team.fromJson(Map<String, dynamic> json) {
-  //   return Team(
-  //     name: json['name'] as String,
-  //     primaryColor: json['color_primary'] as String,
-  //     secondaryColor: json['color_secondary'] as String,
-  //   );
-  // }
 }
 
 
@@ -181,6 +176,88 @@ class Player {
       firstName: json['firstName'] as String,
       lastName: json['lastName'] as String,
       number: json['number'] ? json['number'] as int : null,
+    );
+  }
+}
+
+class MatchDetail {
+  final int id;
+  final int division;
+  final String status;
+  final TeamDetail homeTeam;
+  final TeamDetail awayTeam;
+  final int homeScore;
+  final int awayScore;
+  final DateTime startTime;
+  final DateTime currentTime;
+  final String mainReferee;
+  final String? notes;
+  final String venue;
+
+  MatchDetail({
+    required this.id,
+    required this.division,
+    required this.status,
+    required this.homeTeam,
+    required this.awayTeam,
+    required this.homeScore,
+    required this.awayScore,
+    required this.startTime,
+    required this.currentTime,
+    required this.mainReferee,
+    this.notes,
+    required this.venue,
+  });
+
+  factory MatchDetail.fromJson(Map<String, dynamic> json) {
+    return MatchDetail(
+      id: json['id'] as int,
+      division: json['division'] as int,
+      status: json['status'] as String,
+      homeTeam: TeamDetail.fromJson(json['home_team']),
+      awayTeam: TeamDetail.fromJson(json['away_team']),
+      homeScore: json['home_score'] as int,
+      awayScore: json['away_score'] as int,
+      startTime: DateTime.parse(json['start_time'] as String),
+      currentTime: DateTime.parse(json['current_time'] as String),
+      mainReferee: json['main_referee'] as String,
+      notes: json['notes'] as String,
+      venue: json['venue'] as String,
+    );
+  }
+}
+
+class TeamDetail {
+  final int id;
+  final int division;
+  final String name;
+  final int managerId;
+  final String shortName;
+  final String primaryColor;
+  final String secondaryColor;
+  final List<Player> players;
+
+  TeamDetail({
+    required this.id,
+    required this.division,
+    required this.name,
+    required this.managerId,
+    required this.shortName,
+    required this.primaryColor,
+    required this.secondaryColor,
+    required this.players,
+  });
+
+  factory TeamDetail.fromJson(Map<String, dynamic> json) {
+    return TeamDetail(
+      id: json['id'] as int,
+      division: json['division'] as int,
+      name: json['name'] as String,
+      managerId: json['manager_id'] as int,
+      shortName: json['short_name'] as String,
+      primaryColor: json['color_primary'] as String,
+      secondaryColor: json['color_secondary'] as String,
+      players: (json['players'] as List).map((p) => Player.fromJson(p)).toList(),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:community_sports_league_scheduler/widgets/matchcard.dart';
 import 'package:community_sports_league_scheduler/widgets/template.dart';
 import 'package:community_sports_league_scheduler/object_models.dart' as om;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class MatchesPage extends StatefulWidget {
@@ -287,7 +288,12 @@ class _MatchesPageState extends State<MatchesPage> {
                 padding: const EdgeInsets.all(16),
                 itemCount: sortedMatches.length,
                 itemBuilder: (context, index) {
-                  return MatchCard(match: sortedMatches[index]);
+                  return InkWell(
+                    onTap: () {
+                      context.push('/matches/${sortedMatches[index].id}');
+                    },
+                    child: MatchCard(match: sortedMatches[index]),
+                  );
                 },
               )
             );
