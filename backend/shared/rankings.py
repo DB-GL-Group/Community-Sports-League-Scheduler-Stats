@@ -16,6 +16,27 @@ async def _get_division_teams(division: int):
         return [{"id": row[0], "name": row[1]} for row in rows]
 
 
+async def _get_division_team_colors(division: int):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT id, color_primary, color_secondary
+            FROM teams
+            WHERE division = %s
+            """,
+            (division,),
+        )
+        rows = await cur.fetchall()
+        return {
+            row[0]: {
+                "team_primary_color": row[1],
+                "team_secondary_color": row[2],
+            }
+            for row in rows
+        }
+
+
 async def _get_finished_matches(division: int):
     pool = get_async_pool()
     async with pool.connection() as conn, conn.cursor() as cur:
@@ -115,6 +136,21 @@ async def get_rankings_with_tiebreak(division: int):
         sorted_rankings.extend(group)
 
     return sorted_rankings
+
+
+async def get_rankings_view(division: int):
+    rankings = await get_rankings_with_tiebreak(division)
+    colors = await _get_division_team_colors(division)
+    return [
+        {
+            "team_name": row["team_name"],
+            "team_primary_color": colors.get(row["team_id"], {}).get("team_primary_color"),
+            "team_secondary_color": colors.get(row["team_id"], {}).get("team_secondary_color"),
+            "points": row["points"],
+            "goal_difference": row["goal_diff"],
+        }
+        for row in rankings
+    ]
 
 
 async def update_rankings_for_division(division: int):

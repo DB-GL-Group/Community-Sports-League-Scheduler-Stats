@@ -259,9 +259,14 @@ class _SignUpFormState extends State<SignUpForm> {
                           _isLocked = false;
                         });
                       }
-                    }
-                  },
+                  }
+                },
             child: const Text('Sign Up'),
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () => context.go('/login'),
+            child: const Text('Already have an account? Log in'),
           ),
         ],
       ),

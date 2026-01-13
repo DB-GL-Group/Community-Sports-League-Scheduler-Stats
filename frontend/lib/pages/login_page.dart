@@ -127,7 +127,12 @@ class _LogInFormState extends State<LogInForm> {
               }
             },
             child: const Text('Log In')
-          )
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () => context.go('/signup'),
+            child: const Text("Don't have an account? Sign up"),
+          ),
         ],
       )
     );

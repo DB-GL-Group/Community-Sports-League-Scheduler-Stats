@@ -5,6 +5,7 @@ from ..schemas.auth import UserResponse
 from ..schemas.match import MatchPreviewResponse, MatchResponse
 from shared.matches import get_match_details as fetch_match_details
 from shared.matches import get_match_previews
+from shared.rankings import get_rankings_view
 
 router = APIRouter(prefix="/matches", tags=["matches"])
 
@@ -31,6 +32,10 @@ async def list_match_previews():
         }
         for row in rows
     ]
+
+@router.get("/rankings")
+async def list_rankings(division: int = 1):
+    return await get_rankings_view(division)
 
 @router.get("/{match_id}", response_model=MatchResponse)
 async def get_match_details(match_id: int, current_user: UserResponse = Depends(get_current_user)):

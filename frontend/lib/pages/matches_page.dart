@@ -2,6 +2,7 @@ import 'package:community_sports_league_scheduler/router.dart';
 import 'package:community_sports_league_scheduler/widgets/matchcard.dart';
 import 'package:community_sports_league_scheduler/widgets/template.dart';
 import 'package:community_sports_league_scheduler/object_models.dart' as om;
+import 'package:community_sports_league_scheduler/authprovider.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -297,6 +298,14 @@ class _MatchesPageState extends State<MatchesPage> {
                 itemBuilder: (context, index) {
                   return InkWell(
                     onTap: () {
+                      final auth = context.read<AuthProvider>();
+                      if (!auth.isLoggedIn) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please log in to view match details.')),
+                        );
+                        context.go('/login');
+                        return;
+                      }
                       context.push('/matches/${sortedMatches[index].id}');
                     },
                     child: MatchCard(match: sortedMatches[index]),
