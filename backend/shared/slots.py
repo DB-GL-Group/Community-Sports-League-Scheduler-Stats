@@ -1,5 +1,6 @@
 from shared.db import get_async_pool
 from shared.matches import get_home_and_away_teams_from_match_id
+from shared.teams import list_team_players
 
 
 async def add_slot(court_id, start_time, end_time):
@@ -137,4 +138,52 @@ async def get_match_at_slot(slot_id):
         if not row:
             return None
         return row[0]
+
+async def get_matches_sloted_at_same_time(slot_id, start_time, end_time): # gets all parallel slots except the given one.
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT id
+            FROM slots
+            WHERE slot_id <> %s and start_time = %s and end_time = %s
+            """, (slot_id, start_time, end_time)
+        )
+        row = await cur.fetchall()
+        if not row:
+            return {}
+        return [
+            {
+                "id" : row[0]
+            } for row in row
+        ]
+
+async def are_parallel_matches_possible(slot, h_team_id, a_team_id):
+    parallel_matches = get_matches_sloted_at_same_time(slot["id"], slot["start_time"], slot["end_time"])
+    if not parallel_matches:
+        return True
+    # See if our team is playing in any of the parallel matches or not.
+    for parallel_match in parallel_matches:
+        parallel_match_team_ids = await get_home_and_away_teams_from_match_id(parallel_match["id"])
+        if h_team_id in parallel_match_team_ids or a_team_id in parallel_match_team_ids:
+            return False
+
+    # See if any players in our team are in the parallel matches or not.
+    all_home_players_in_this_match = await list_team_players(h_team_id)
+    all_away_players_in_this_match = await list_team_players(a_team_id)
+    for p_match in parallel_matches:
+        p_teams_ids = await get_home_and_away_teams_from_match_id(p_match["id"])
+        all_home_players_in_that_match = await list_team_players(p_teams_ids[0])
+        all_away_players_in_that_match = await list_team_players(p_teams_ids[1])
+        for i in all_home_players_in_this_match:
+            if i in all_home_players_in_that_match:
+                return False
+            if i in all_away_players_in_that_match:
+                return False
+        for i in all_away_players_in_this_match:
+            if i in all_home_players_in_that_match:
+                return False
+            if i in all_away_players_in_that_match:
+                return False
     
+    return True
