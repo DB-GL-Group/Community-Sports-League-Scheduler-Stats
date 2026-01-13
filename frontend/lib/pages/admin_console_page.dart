@@ -225,14 +225,15 @@ class _AdminConsolePageState extends State<AdminConsolePage> {
   }
 
   Widget _sectionTitle(String title) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Padding(
       padding: const EdgeInsets.only(top: 16, bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 16,
-          color: Colors.white,
+          color: onSurface,
         ),
       ),
     );
@@ -242,20 +243,21 @@ class _AdminConsolePageState extends State<AdminConsolePage> {
     required String title,
     required List<Widget> children,
   }) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1E24),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: onSurface,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -271,7 +273,7 @@ class _AdminConsolePageState extends State<AdminConsolePage> {
   Widget build(BuildContext context) {
     return Template(
       pageBody: Scaffold(
-        backgroundColor: const Color(0xFF101214),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -333,9 +335,9 @@ class _AdminConsolePageState extends State<AdminConsolePage> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF121419),
+                          color: Theme.of(context).colorScheme.surfaceVariant,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white12),
+                          border: Border.all(color: Theme.of(context).dividerColor),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -344,9 +346,9 @@ class _AdminConsolePageState extends State<AdminConsolePage> {
                               child: Text(
                                 '${_selectedMatch!['home_team']} ${_selectedMatch!['home_score']} - '
                                 '${_selectedMatch!['away_score']} ${_selectedMatch!['away_team']}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                             ),

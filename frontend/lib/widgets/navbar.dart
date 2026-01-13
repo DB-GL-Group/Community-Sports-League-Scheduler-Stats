@@ -97,6 +97,11 @@ class NavBar extends StatelessWidget {
           onTap: () => context.go('/admin/scheduler'),
         ),
         ListTile(
+          leading: Icon(Icons.location_city),
+          title: Text('Venues'),
+          onTap: () => context.go('/admin/venues'),
+        ),
+        ListTile(
           leading: Icon(Icons.vpn_key),
           title: Text('Role Keys'),
           onTap: () => context.go('/admin/role-keys'),

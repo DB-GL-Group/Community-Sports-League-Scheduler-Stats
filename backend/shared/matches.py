@@ -14,6 +14,7 @@ class MatchStatus(str, Enum):
     FINISHED = "finished"
     POSTPONED = "postponed"
     CANCELED = "canceled"
+    TBD = "tbd"
 
 async def get_all_matches():
     pool = get_async_pool()
@@ -165,6 +166,15 @@ async def add_match(
                 INSERT INTO match_slot (slot_id, match_id)
                 VALUES (%s, %s)
                 ON CONFLICT DO NOTHING
+                """,
+                (slot_id, match_row[0]),
+            )
+            await cur.execute(
+                """
+                UPDATE matches
+                SET scheduled_start_time = s.start_time
+                FROM slots s
+                WHERE s.id = %s AND matches.id = %s
                 """,
                 (slot_id, match_row[0]),
             )
@@ -454,6 +464,22 @@ async def clear_match_schedule():
         await cur.execute("DELETE FROM substitutions")
         await conn.commit()
 
+async def clear_match_slots_for_matches(match_ids: list[int]):
+    if not match_ids:
+        return 0
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            DELETE FROM match_slot
+            WHERE match_id = ANY(%s)
+            """,
+            (match_ids,),
+        )
+        deleted = cur.rowcount
+        await conn.commit()
+        return deleted
+
 
 async def get_match_previews():
     pool = get_async_pool()
@@ -467,7 +493,7 @@ async def get_match_previews():
                    at.name AS away_team,
                    COALESCE(m.home_score, 0) AS home_score,
                    COALESCE(m.away_score, 0) AS away_score,
-                   MIN(s.start_time) AS start_time,
+                   COALESCE(MIN(s.start_time), m.scheduled_start_time) AS start_time,
                    ht.color_primary AS home_primary_color,
                    ht.color_secondary AS home_secondary_color,
                    at.color_primary AS away_primary_color,
@@ -477,7 +503,7 @@ async def get_match_previews():
             JOIN teams at ON at.id = m.away_team_id
             LEFT JOIN match_slot ms ON ms.match_id = m.id
             LEFT JOIN slots s ON s.id = ms.slot_id
-            GROUP BY m.id, m.division, m.status, m.home_score, m.away_score,
+            GROUP BY m.id, m.division, m.status, m.home_score, m.away_score, m.scheduled_start_time,
                      ht.name, at.name, ht.color_primary, ht.color_secondary,
                      at.color_primary, at.color_secondary
             ORDER BY start_time NULLS LAST, m.id
@@ -515,7 +541,7 @@ async def get_match_details(match_id: int):
                    m.away_team_id,
                    COALESCE(m.home_score, 0) AS home_score,
                    COALESCE(m.away_score, 0) AS away_score,
-                   MIN(s.start_time) AS start_time,
+                   COALESCE(MIN(s.start_time), m.scheduled_start_time) AS start_time,
                    NOW() AS current_time,
                    COALESCE(p.first_name || ' ' || p.last_name, '') AS main_referee,
                    COALESCE(m.notes, '') AS notes,
@@ -531,7 +557,8 @@ async def get_match_details(match_id: int):
             LEFT JOIN persons p ON p.id = mr.referee_id
             WHERE m.id = %s
             GROUP BY m.id, m.division, m.status, m.home_team_id, m.away_team_id,
-                     m.home_score, m.away_score, m.notes, p.first_name, p.last_name, v.name
+                     m.home_score, m.away_score, m.notes, p.first_name, p.last_name, v.name,
+                     m.scheduled_start_time
             """,
             (match_id,),
         )
@@ -557,9 +584,22 @@ async def get_match_details(match_id: int):
         }
 
 async def get_home_and_away_teams_from_match_id(match_id):
-    home_team_id = ( await get_team_ID_by_name( (await get_match_details(match_id))["home_team"]["name"] ) )["id"]
-    away_team_id = ( await get_team_ID_by_name( (await get_match_details(match_id))["away_team"]["name"] ) )["id"]
-    return [home_team_id, away_team_id]
+    if match_id is None:
+        return []
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT home_team_id, away_team_id
+            FROM matches
+            WHERE id = %s
+            """,
+            (match_id,),
+        )
+        row = await cur.fetchone()
+        if not row:
+            return []
+        return [row[0], row[1]]
 
 async def perform_tie_breaker(home_team_id, away_team_id):
     winner = int(random.randrange(1, 2))
@@ -656,6 +696,15 @@ async def schedule_match(match_id: int, slot_id: int):
             (slot_id, match_id),
         )
         row = await cur.fetchone()
+        await cur.execute(
+            """
+            UPDATE matches
+            SET scheduled_start_time = s.start_time
+            FROM slots s
+            WHERE s.id = %s AND matches.id = %s
+            """,
+            (slot_id, match_id),
+        )
         await conn.commit()
         if not row:
             return {"status": "exists", "match_id": match_id, "slot_id": slot_id}
@@ -665,6 +714,20 @@ async def schedule_match(match_id: int, slot_id: int):
 async def cancel_match(match_id):
     pool = get_async_pool()
     async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            UPDATE matches
+            SET scheduled_start_time = COALESCE(
+                scheduled_start_time,
+                (SELECT MIN(s.start_time)
+                 FROM match_slot ms
+                 JOIN slots s ON s.id = ms.slot_id
+                 WHERE ms.match_id = %s)
+            )
+            WHERE id = %s
+            """,
+            (match_id, match_id),
+        )
         await cur.execute(
             "DELETE FROM match_slot WHERE match_id = %s",
             (match_id,),
@@ -677,6 +740,42 @@ async def cancel_match(match_id):
             RETURNING id, status
             """,
             (MatchStatus.CANCELED.value, match_id),
+        )
+        row = await cur.fetchone()
+        await conn.commit()
+        if not row:
+            return {}
+        return {"id": row[0], "status": row[1]}
+
+async def mark_match_postponed(match_id: int):
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute(
+            """
+            UPDATE matches
+            SET scheduled_start_time = COALESCE(
+                scheduled_start_time,
+                (SELECT MIN(s.start_time)
+                 FROM match_slot ms
+                 JOIN slots s ON s.id = ms.slot_id
+                 WHERE ms.match_id = %s)
+            )
+            WHERE id = %s
+            """,
+            (match_id, match_id),
+        )
+        await cur.execute(
+            "DELETE FROM match_slot WHERE match_id = %s",
+            (match_id,),
+        )
+        await cur.execute(
+            """
+            UPDATE matches
+            SET status = %s
+            WHERE id = %s
+            RETURNING id, status
+            """,
+            (MatchStatus.POSTPONED.value, match_id),
         )
         row = await cur.fetchone()
         await conn.commit()

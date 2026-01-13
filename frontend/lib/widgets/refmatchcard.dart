@@ -52,6 +52,7 @@ class RefMatchCard extends StatelessWidget {
     final dateFormat = DateFormat.yMMMMd();
     final timeFormat = DateFormat.Hm();
     final displayStatus = _isFinished ? 'Finished' : match.status;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -84,7 +85,7 @@ class RefMatchCard extends StatelessWidget {
             // Date & venue
             Text(
               '${dateFormat.format(match.startTime)} · ${match.venue}',
-              style: const TextStyle(fontSize: 13, color: Colors.white60),
+              style: TextStyle(fontSize: 13, color: onSurface.withOpacity(0.6)),
             ),
 
             const SizedBox(height: 12),
@@ -100,10 +101,10 @@ class RefMatchCard extends StatelessWidget {
                 ),
 
                 if (_isLocked)
-                  const Icon(
+                  Icon(
                     Icons.lock,
                     size: 20,
-                    color: Colors.white54,
+                    color: onSurface.withOpacity(0.55),
                   ),
 
                 if (_canRespond)

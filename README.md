@@ -1,203 +1,248 @@
-# 🏆 Community Sports League 
+# 🏆 Community Sports League — Scheduler & Stats
 
-## Table of Contents
-- [ℹ️ General Information](#ℹ️-general-information)
-- [📁 Structure](#📁-structure)
-- [📦 Setup](#📦-setup)
-- [🛠 Useful Commands](#🛠-useful-commands)
-- [🔄 Workflow to Update the DB](#🔄-workflow-to-update-the-db)
-- [🔗 Database Access](#🔗-database-access)
-- [✍️ Modify the Database](#✍️-modify-the-database)
-- [🔥 Managing Flyway Version Conflicts](#🔥-managing-flyway-version-conflicts)
-- [💾 Reset Local DB (dev ONLY)](#💾-reset-local-db-dev-only)
-- [🧪 Test Migrations](#🧪-test-migrations)
+## 📚 Table of Contents
 
-## ℹ️ General Information
-### Description
-Community Sports League is a student project at HESSO Valais-Wallis. The objectives are as follows:
-- Database management
-- ORM 
-- Application with portals (admin, fan, manager, referee, public)
+* [ℹ️ Overview](#overview)
+* [🧱 Tech Stack](#tech-stack)
+* [📁 Repository Structure](#repository-structure)
+* [⚡ Quick Start](#quick-start)
+* [🗄️ Database](#database)
+* [🧠 Backend](#backend)
+* [🎨 Frontend](#frontend)
+* [📖 Documentation](#documentation)
 
-### Prerequisites
+---
 
-- Docker + Docker Compose
-- Git
+<a id="overview"></a>
 
-### Docker Images Used
-- Postgres:18
-- Flyway:11
+## ℹ️ Overview
 
-### External Tools 
-- Visualization: [dbdiagram.io](https://dbdiagram.io/home)
+**Community Sports League Scheduler Stats** is a full-stack project designed to manage a sports league with **role-based portals**:
 
-## 📁 Structure
+* 👥 Fan
+* 🧑‍💼 Manager
+* 🧑‍⚖️ Referee
+* 🛠️ Admin
+
+Core features include:
+
+* 📅 Match scheduling
+* 🧑‍⚖️ Referee availability & assignment
+* 🏆 Rankings & statistics
+* 🟢 Live match event tracking
+
+This project is developed as part of an academic curriculum and follows **industry best practices** (migrations, containerization, role-based access).
+
+---
+
+<a id="tech-stack"></a>
+
+## 🧱 Tech Stack
+
+* 🎨 **Frontend**: Flutter (Web)
+* 🧠 **Backend**: FastAPI (Python)
+* 🗄️ **Database**: PostgreSQL
+* ⚙️ **Background jobs**: Redis + RQ
+* 🧬 **Migrations**: Flyway
+* 🐳 **Infrastructure**: Docker & Docker Compose
+
+---
+
+<a id="repository-structure"></a>
+
+## 📁 Repository Structure
+
 ```bash
-📁 COMMUNITY-SPORTS-LEAGUE-SCHEDULER-STATS
-├── 📝 CONTRIBUTING.md
-├── 📄 LICENSE
-├── Ⓜ️ Makefile
-├── 📝 PSQL_CheatSheet.md
-├── 📝 README.md
-├── 📁 app
-│   ├── 📁 backend
-│   └── 📁 frontend
-├── 📁 db
-│   └── 📁 migrations
-│       └── 📚 V1__init.sql
-├── 🐳 docker-compose.yml
-└── 📁 documents
-    ├── 📝 DB_leagues_diagram.pdf
-    └── 📝 DB_leagues_diagram_new.pdf
+📁 Community-Sports-League-Scheduler-Stats
+├── 📁 backend/            # FastAPI app + RQ worker
+├── 📁 frontend/           # Flutter web UI
+├── 📁 db/
+│   └── 📁 migrations/     # Flyway SQL migrations
+├── 📁 documents/          # Guides, architecture, SQL samples
+├── 🐳 docker-compose.yml  # Development stack
+└── Ⓜ️ Makefile            # Common commands
 ```
 
-## 📦 Setup
+---
 
-**1) Clone the repository**
+<a id="quick-start"></a>
+
+## ⚡ Quick Start
+
+### 1️⃣ Clone the repository
+
 ```bash
 git clone https://github.com/DB-GL-Group/Community-Sports-League-Scheduler-Stats.git
 cd Community-Sports-League-Scheduler-Stats
 ```
 
-**2) Environment variables (Required)**
+### 2️⃣ Environment variables
+
 ```bash
-cp .env.example .env # Modify variables if needed
+cp .env.example .env
 ```
 
-## 🛠 Useful Commands
+### 3️⃣ Start database & apply migrations
 
-| Action | Command |
-|--------|----------|
-| Start Postgres | `make db-start` |
-| Apply migrations | `make db-migrate` |
-| Check status | `make db-status` |
-| Stop the DB | `make db-stop` |
-| Delete data | `make db-remove-all`|
-| Reset (⚠️ deletes data) | `make db-reset` |
-
-
-## 🔄 Workflow to Update the DB
-
-1️⃣ Pull updated code:
-
-```
-git pull --rebase
-```
-
-2️⃣ Start Postgres (if needed):
-
-```
+```bash
 make db-start
-```
-
-3️⃣ Apply existing migrations (if necessary):
-
-```
 make db-migrate
-make db-status
 ```
 
-> 📌 Must display: `Database schema is up to date.` 
+### 4️⃣ Start backend & worker
 
-> 📌 IMPORTANT: Any evolution goes through **a new versioned migration**.
-
-## 🔗 Database Access
-The PostgreSQL database is accessible on the port defined in the `.env` file (default `5432`). 
-
-A PostgreSQL client (such as `psql`, DBeaver, or Beekeeper studio) is required to connect with the credentials defined in the `.env` file. 
-
-### Examples 
-1) **`psql`**
-
-    ```bash
-    docker exec -it sports-league-db psql -U <user> -d sports_league 
-    ```
-
-2) **`Beekeeper Studio`**
-    - Host: `localhost`
-    - Port: `5432` (or the one defined in `.env`)
-    - User: `<user>` (defined in `.env`)
-    - Password: `<password>` (defined in `.env`)
-    - Database: `sports_league` (defined in `.env`)
-    
-## ✍️ Modify the Database
-Any modification to the structure must be added in a SQL file in the `db/migrations/` folder. \
-Files follow the following naming convention: 
-
-1) **Add a migration**
-    ```
-    "V<version>__<description>.sql"
-    ```
-
-2) **"Delete" a migration**
-    ```
-    db/migrations/U<version>__<description>.sql
-    ```
-
-> 📌 At container startup, all SQL scripts in this folder will be executed automatically to initialize the database. 
-
-> 📌 From Beekeeper Studio, these are the queries executed.
-
-## 🔥 Managing Flyway Version Conflicts
-
-**Conflicting case:**  
-Two migration files with the same version `V012__xxx.sql` and `V012__yyy.sql`.
-
-**Rules:**\
-➡️ The first push wins.  
-➡️ The second must renumber.
-
-**Solution:**
-1. Rebase:
-
-```
-git pull --rebase
+```bash
+make backend-start
 ```
 
-2. Find the latest number:
-
+### 5️⃣ Flutter setup
+```bash
+make flutter-setup
 ```
-ls db/migrations
-```
-
-3. Rename your migration:
-
-```
-mv db/migrations/V012__mine.sql db/migrations/V013__mine.sql
-```
-
-4. Commit + push
-
-<br>
-
-> 🎯 No content modification required 
+> 📌 This calls flutter-setup.ps1 (Windows) or flutter-setup.sh (MacOS/Linux). Follow the instructions to fully install flutter.
 
 
-## 💾 Reset Local DB (dev ONLY)
+### 6️⃣ Start frontend (Flutter web)
 
-To start fresh (🛑 deletes all your local data):
-
-```
-make db-reset
+```bash
+cd frontend
+flutter run -d chrome
 ```
 
-This:
+---
 
-- deletes the Postgres volume
-- recreates the empty DB
-- reapplies **all** migrations in order
+<a id="database"></a>
 
+## 🗄️ Database
 
-## 🧪 Test Migrations
+### 📌 Structure & seeds
 
-Best practices:
+* Schema migrations: [`db/migrations/`](db/migrations/)
+* Default roles: `V1__init.sql`
+* Default admin user: `V2__seed_admin.sql`
 
-- Test the migration on a new DB:
+### 🔧 Useful commands
+
+```bash
+make db-start        # Start DB container
+make db-migrate      # Apply migrations
+make db-status       # Flyway status
+make db-stop         # Stop DB + Flyway
+make db-reset        # Drop volume + reapply migrations
+```
+
+### 🔄 Migration workflow (Flyway)
+
+* All schema changes go through a **new versioned migration**
+* Naming convention:
+
   ```
-  make db-reset
+  V<version>__<description>.sql
   ```
-- Verify there is **nothing pending**:
-  ```
-  make db-status
-  ```
+* If two migrations share the same version:
+
+  * 🥇 First pushed wins
+  * 🔁 Second must be renumbered
+* Flyway runs automatically via `docker-compose`
+
+> 📌 `make db-status` must display: **Database schema is up to date**
+
+---
+
+<a id="backend"></a>
+
+## 🧠 Backend
+
+* 🌐 API base URL: [http://localhost:8000](http://localhost:8000)
+* ❤️ Health check: `GET /health`
+
+### 🔐 Authentication
+
+* `/auth/signup`
+* `/auth/login`
+* `/auth/me`
+
+### ⚙️ Core services
+
+* Scheduler: `/scheduler/run`, `/scheduler/status`
+* Role-based APIs: `/user/*`
+
+📄 Full endpoint list & admin actions:
+➡️ [`backend/README.md`](backend/README.md)
+
+### 🔧 Commands
+
+```bash
+make backend-start      # Start backend and worker
+make backend-stop       # Stop backend and worker
+make backend-restart    # Restart backend and worker
+make backend-db-conn    # Check backend-db connection
+```
+
+### 🧪 Smoke tests
+
+```bash
+make test-signup        # Signup with .env credentials
+make test-login         # Login with .env credentials
+make test-auth          # Check authorizations
+```
+
+---
+
+<a id="frontend"></a>
+
+## 🎨 Frontend
+
+Flutter web application with dedicated portals:
+
+* 🌍 **Public**: matches, rankings, statistics
+* 🧑‍💼 **Manager**: team & roster management
+* 🧑‍⚖️ **Referee**: availability & assignments
+* 🛠️ **Admin**: console, scheduler, role keys
+
+### 📍 Main routes
+
+* `/` — matches
+* `/rankings` — rankings
+* `/stats` — statistics
+* `/rosters` — manager portal
+* `/assignments`, `/availabilities` — referee portal
+* `/admin/console`, `/admin/scheduler`, `/admin/role-keys` — admin portal
+
+### ▶️ Run frontend
+
+```bash
+make flutter-setup
+cd frontend
+flutter run -d chrome
+```
+
+---
+
+## Data Seeding (from backend docker terminal)
+
+### Teams 
+
+```bash
+python -m helper.debug_teams --division <division> --teams <nb_of_teams> --players <nb_of_players>
+```
+
+### Matches (Can also be done in admin panel)
+
+```bash
+python -m helper.debug_matches --division <division> --count <nb_of_matches> --status <status_of_matches>
+```
+> 📌 status : in_progress, scheduled, canceled, postponed, finished, tbd
+
+---
+
+<a id="documentation"></a>
+
+## 📖 Documentation
+
+* 📘 User guide: [`documents/User_Guide.md`](documents/User_Guide.md)
+* 🏗️ Architecture & data model: [`documents/Architecture_Data.md`](documents/Architecture_Data.md)
+* 🧪 Testing strategy: [`documents/Testing.md`](documents/Testing.md)
+* 🗃️ SQL samples: [`documents/sql/`](documents/sql/)
+
 

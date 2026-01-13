@@ -20,17 +20,21 @@ class LogInPage extends StatelessWidget {
             width: 420,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1E24),
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white12),
+              border: Border.all(color: Theme.of(context).dividerColor),
             ),
             child: Column(
-              children: const [
+              children: [
                 Text(
                   'Log in',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
-                LogInForm(),
+                const LogInForm(),
               ],
             ),
           ),
@@ -108,7 +112,9 @@ class _LogInFormState extends State<LogInForm> {
             child: Center(child: Text(
               _formMessage,
               style: TextStyle(
-                color: _formMessage.startsWith("Wrong credentials") ? Colors.red : Colors.white70
+                color: _formMessage.startsWith("Wrong credentials")
+                    ? Colors.red
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.7)
               )
             ))
           ),

@@ -1,11 +1,15 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert'; // Pour jsonDecode
 
+typedef SessionExpiredCallback = Future<void> Function();
+
 
 class ApiRouter {
-  ApiRouter({this.baseUrl = "http://localhost:8000"});
+  ApiRouter({this.baseUrl = "http://localhost:8000", this.onSessionExpired});
 
   final String baseUrl;
+  final SessionExpiredCallback? onSessionExpired;
+  static bool _sessionDialogOpen = false;
 
   Future<dynamic> fetchData(String endpoint, {String method = 'GET', Map<String, dynamic> body = const {}, String token = ''}) async {
     final headers = <String, String>{
@@ -35,6 +39,13 @@ class ApiRouter {
         return jsonDecode(response.body);
       } catch (_) {
         return {};
+      }
+    }
+    if (response.statusCode == 401 && response.body.contains('Token expired')) {
+      if (onSessionExpired != null && !_sessionDialogOpen) {
+        _sessionDialogOpen = true;
+        await onSessionExpired!();
+        _sessionDialogOpen = false;
       }
     }
     throw Exception('Failed to load data');

@@ -27,15 +27,19 @@ class _AdminKeysPageState extends State<AdminKeysPage> {
             width: 420,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1E24),
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white12),
+              border: Border.all(color: Theme.of(context).dividerColor),
             ),
             child: Column(
               children: [
-                const Text(
+                Text(
                   'Admin Role Keys',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 DropdownButtonFormField<String>(
@@ -104,7 +108,9 @@ class _AdminKeysPageState extends State<AdminKeysPage> {
                 Text(
                   _message,
                   style: TextStyle(
-                    color: _message.startsWith('Failed') ? Colors.red : Colors.white70,
+                    color: _message.startsWith('Failed')
+                        ? Colors.red
+                        : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                   ),
                 ),
               ],

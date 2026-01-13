@@ -10,8 +10,9 @@ from shared.managers import create_manager
 from shared.matches import (
     addScore,
     add_match,
-    clear_match_schedule,
     get_all_matches,
+    clear_match_slots_for_matches,
+    MatchStatus,
     schedule_match,
     get_match_details,
     get_home_and_away_teams_from_match_id,
@@ -21,22 +22,29 @@ from shared.venues import add_venue
 from shared.teams import create_team, add_player
 from shared.slots import get_all_slots, are_both_next_slots_possible, are_parallel_matches_possible
 from shared.db import close_async_pool, open_async_pool
-from worker.tasks.matchGeneretor import generate_matches
 
 logger = logging.getLogger(__name__)
 
 
-def run_scheduler_job() -> None:
-    asyncio.run(_run_scheduler_job())
+def run_scheduler_job() -> dict:
+    return asyncio.run(_run_scheduler_job())
 
 
 async def _run_scheduler_job() -> None:
     await open_async_pool()
     try:
-        await clear_match_schedule()
-        # Implement scheduler logic
-        all_unscheduled_matches = await generate_matches()
+        all_matches = await get_all_matches()
+        all_unscheduled_matches = [
+            match
+            for match in all_matches
+            if match.get("status") in {MatchStatus.POSTPONED.value, MatchStatus.TBD.value}
+        ]
+        if not all_unscheduled_matches:
+            return {"scheduled": 0}
+        await clear_match_slots_for_matches([match["id"] for match in all_unscheduled_matches])
         nbr_of_matches = len(all_unscheduled_matches)
+        if nbr_of_matches == 0:
+            return {"scheduled": 0}
 
         # Dates
         current_date = date.today()
@@ -53,9 +61,9 @@ async def _run_scheduler_job() -> None:
 
         division = 1
 
-        minimum_number_of_match_days = nbr_of_matches
-        season_start_date = current_date
-        season_end_date = current_date + timedelta(days=minimum_number_of_match_days)
+        minimum_number_of_match_days = max(1, nbr_of_matches)
+        season_start_date = current_date + timedelta(days=7)
+        season_end_date = season_start_date + timedelta(days=minimum_number_of_match_days)
 
         for court in all_courts:
             proceed = await generate_slots(court["id"], season_start_date, season_end_date)
@@ -69,6 +77,7 @@ async def _run_scheduler_job() -> None:
         # 2. Teleportation is authorized. I player can play the very next match slot in another venue. => verif_2
         # 3. A team cannot play in two seperate matches at the same time. => verif_2
         
+        scheduled_count = 0
         for current_match in list(reversed(all_unscheduled_matches)): # Goes through all the matches from the end,
                                                             # so when we remove one, it doesn't do anything unexpected.
                                                             # It will only reiterate once a valid slot is found for the
@@ -88,6 +97,8 @@ async def _run_scheduler_job() -> None:
                 verdict = verif_1 and verif_2
                 if verdict:
                     proceed = await schedule_match(current_match["id"], slot["id"]) # SCHEDULES MATCH
+                    if proceed.get("status") in {"created", "exists"}:
+                        scheduled_count += 1
                     all_unscheduled_matches.pop(-1)
                     break
                 slots_iterator += 1                                             # Here FAILED so moves on to the next available slot.
@@ -98,5 +109,6 @@ async def _run_scheduler_job() -> None:
             raise Exception("SOME MATCHES WERE NOT SCHEDULED !!") # not good.
 
         print("This is the end of ze schedluation my friend.")
+        return {"scheduled": scheduled_count}
     finally:
         await close_async_pool()

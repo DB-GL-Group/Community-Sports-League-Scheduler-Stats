@@ -65,21 +65,22 @@ async def generate_slots(court_id, start_date, end_date, slots_per_day=6, slots_
                     """
                     INSERT INTO slots (court_id, start_time, end_time)
                     VALUES (%s, %s, %s)
+                    ON CONFLICT (court_id, start_time) DO NOTHING
                     RETURNING id, court_id, start_time, end_time
                     """,
                     (court_id, current_start, current_end),
                 )
                 row = await cur.fetchone()
-                created.append(
-                    {
-                        "id": row[0],
-                        "court_id": row[1],
-                        "start_time": row[2],
-                        "end_time": row[3],
-                    }
-                )
+                if row:
+                    created.append(
+                        {
+                            "id": row[0],
+                            "court_id": row[1],
+                            "start_time": row[2],
+                            "end_time": row[3],
+                        }
+                    )
                 current_start = current_end
             current_day += timedelta(days=1)
         await conn.commit()
     return created
-    return True

@@ -3,19 +3,24 @@ import 'package:community_sports_league_scheduler/object_models.dart' as om;
 
 class MatchCard extends StatelessWidget {
   final om.Match match;
+  final Widget? actions;
 
-  const MatchCard({super.key, required this.match});
+  const MatchCard({super.key, required this.match, this.actions});
 
   @override
   Widget build(BuildContext context) {
     final bool homeLost = match.homeScore < match.awayScore;
     final bool awayLost = match.awayScore < match.homeScore;
+    final colorScheme = Theme.of(context).colorScheme;
+    final dividerColor = Theme.of(context).dividerColor;
+    final onSurface = colorScheme.onSurface;
+    final onSurfaceMuted = onSurface.withOpacity(0.6);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 62, 62, 62),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -28,12 +33,14 @@ class MatchCard extends StatelessWidget {
                   team: match.homeTeam,
                   score: match.homeScore,
                   faded: homeLost,
+                  textColor: onSurface,
                 ),
                 const SizedBox(height: 10),
                 _teamRow(
                   team: match.awayTeam,
                   score: match.awayScore,
                   faded: awayLost,
+                  textColor: onSurface,
                 ),
               ],
             ),
@@ -44,7 +51,7 @@ class MatchCard extends StatelessWidget {
             height: 48,
             width: 1,
             margin: const EdgeInsets.symmetric(horizontal: 12),
-            color: Colors.white24,
+            color: dividerColor.withOpacity(0.35),
           ),
 
           // Status + Date
@@ -53,19 +60,27 @@ class MatchCard extends StatelessWidget {
             children: [
               Text(
                 match.status,
-                style: const TextStyle(
-                  color: Colors.white70,
+                style: TextStyle(
+                  color: _statusColor(match.status),
                   fontSize: 12,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 _formatDate(match.startTime),
-                style: const TextStyle(
-                  color: Colors.white38,
+                style: TextStyle(
+                  color: onSurfaceMuted,
                   fontSize: 12,
                 ),
               ),
+              if (actions != null) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: actions!,
+                ),
+              ],
             ],
           ),
         ],
@@ -77,6 +92,7 @@ class MatchCard extends StatelessWidget {
     required om.Team team,
     required int score,
     required bool faded,
+    required Color textColor,
   }) {
     final double opacity = faded ? 0.5 : 1.0;
 
@@ -110,8 +126,8 @@ class MatchCard extends StatelessWidget {
           Expanded(
             child: Text(
               team.name,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: textColor,
                 fontSize: 15,
               ),
               overflow: TextOverflow.ellipsis,
@@ -123,8 +139,8 @@ class MatchCard extends StatelessWidget {
           // Score
           Text(
             score.toString(),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: textColor,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -136,6 +152,25 @@ class MatchCard extends StatelessWidget {
   String _formatDate(DateTime? date) {
     if (date == null) return 'TBD';
     return '${_weekday(date.weekday)} ${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}';
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'scheduled':
+        return const Color(0xFF90CAF9);
+      case 'in_progress':
+        return const Color(0xFFFFCC80);
+      case 'finished':
+        return const Color(0xFF81C784);
+      case 'postponed':
+        return const Color(0xFFE57373);
+      case 'canceled':
+        return const Color(0xFFD32F2F);
+      case 'tbd':
+        return const Color(0xFFB39DDB);
+      default:
+        return Colors.white70;
+    }
   }
 
   String _weekday(int day) {

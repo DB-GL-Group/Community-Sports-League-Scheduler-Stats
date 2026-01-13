@@ -698,11 +698,11 @@ class _RostersPageState extends State<RostersPage> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                       child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1A1E24),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white12),
+                          border: Border.all(color: Theme.of(context).dividerColor),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -712,25 +712,44 @@ class _RostersPageState extends State<RostersPage> {
                               children: [
                                 Text(
                                   team['name']?.toString() ?? 'Team',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ),
                                 IconButton(
                                   tooltip: 'Edit team',
                                   onPressed: () => _editTeam(team),
-                                  icon: const Icon(Icons.edit),
+                                  icon: Icon(
+                                    Icons.edit,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                  ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 6),
-                            Text('Division: ${team['division'] ?? '-'}'),
+                            Text(
+                              'Division: ${team['division'] ?? '-'}',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                              ),
+                            ),
                             if ((team['short_name'] ?? '').toString().isNotEmpty)
-                              Text('Short name: ${team['short_name']}'),
+                              Text(
+                                'Short name: ${team['short_name']}',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                                ),
+                              ),
                             if ((team['color_primary'] ?? '').toString().isNotEmpty ||
                                 (team['color_secondary'] ?? '').toString().isNotEmpty)
-                              const Text('Colors:'),
+                              Text(
+                                'Colors:',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                                ),
+                              ),
                             if ((team['color_primary'] ?? '').toString().isNotEmpty ||
                                 (team['color_secondary'] ?? '').toString().isNotEmpty)
                               Padding(
@@ -749,7 +768,12 @@ class _RostersPageState extends State<RostersPage> {
                                     if ((team['color_primary'] ?? '').toString().isNotEmpty)
                                       const SizedBox(width: 8),
                                     if ((team['color_primary'] ?? '').toString().isNotEmpty)
-                                      const Text('Primary'),
+                                      Text(
+                                        'Primary',
+                                        style: TextStyle(
+                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                                        ),
+                                      ),
                                     if ((team['color_primary'] ?? '').toString().isNotEmpty &&
                                         (team['color_secondary'] ?? '').toString().isNotEmpty)
                                       const SizedBox(width: 16),
@@ -765,7 +789,12 @@ class _RostersPageState extends State<RostersPage> {
                                     if ((team['color_secondary'] ?? '').toString().isNotEmpty)
                                       const SizedBox(width: 8),
                                     if ((team['color_secondary'] ?? '').toString().isNotEmpty)
-                                      const Text('Secondary'),
+                                      Text(
+                                        'Secondary',
+                                        style: TextStyle(
+                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),

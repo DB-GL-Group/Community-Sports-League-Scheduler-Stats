@@ -31,6 +31,7 @@ from ..schemas.fan import (
     TeamIdRequest,
 )
 from ..schemas.teams import TeamAddRequest, TeamResponse, TeamUpdateRequest
+from ..schemas.venue import VenueCreateRequest, VenueResponse
 from shared.referees import (
     add_referee_availability,
     get_referee_availability,
@@ -44,8 +45,10 @@ from shared.matches import (
     add_card_event,
     add_goal_event,
     add_substitution_event,
+    cancel_match,
     finalize_match,
     list_matches_in_progress,
+    mark_match_postponed,
 )
 from shared.rankings import get_rankings_with_tiebreak
 from shared.teams import (
@@ -70,10 +73,12 @@ from shared.fans import (
     update_notification_settings,
 )
 from shared.role_keys import create_role_key
+from shared.venues import add_venue, list_venues, update_venue, delete_venue, list_venue_matches
 
 from helper.players import populate_players
 
 from worker.tasks.scheduler import run_scheduler_job
+from worker.tasks.matchGeneretor import run_generate_matches_job
 from helper.redis import MATCHES_GEN_JOB_ID, SCHEDULER_JOB_ID, _ACTIVE_STATUSES, _get_queue
 
 from fastapi import APIRouter, HTTPException, status
@@ -530,6 +535,94 @@ async def admin_list_team_players(
 ):
     return await list_team_players(team_id)
 
+@router.get("/admin/venues", response_model=list[VenueResponse])
+async def admin_list_venues(
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    return await list_venues()
+
+
+@router.post("/admin/venues", response_model=VenueResponse, status_code=status.HTTP_201_CREATED)
+async def admin_add_venue(
+    payload: VenueCreateRequest,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    venue = await add_venue(payload.name, payload.address)
+    if not venue:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Venue creation failed")
+    return venue
+
+
+@router.put("/admin/venues/{venue_id}", response_model=VenueResponse)
+async def admin_update_venue(
+    venue_id: int,
+    payload: VenueCreateRequest,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    venue = await update_venue(venue_id, payload.name, payload.address)
+    if not venue:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Venue not found")
+    return venue
+
+
+@router.delete("/admin/venues/{venue_id}")
+async def admin_delete_venue(
+    venue_id: int,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    deleted = await delete_venue(venue_id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Venue not found")
+    return {"status": "deleted", "id": deleted["id"]}
+
+
+@router.get("/admin/venues/{venue_id}/matches")
+async def admin_list_venue_matches(
+    venue_id: int,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    return await list_venue_matches(venue_id)
+
+@router.post("/admin/matches/generate")
+async def admin_generate_matches(
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    queue = _get_queue()
+    try:
+        existing_job = Job.fetch(MATCHES_GEN_JOB_ID, connection=queue.connection)
+    except Exception:
+        existing_job = None
+
+    if existing_job:
+        status_name = existing_job.get_status()
+        if status_name in _ACTIVE_STATUSES:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Match generation already running",
+            )
+        existing_job.delete()
+
+    job = queue.enqueue(run_generate_matches_job, job_id=MATCHES_GEN_JOB_ID)
+    return {"job_id": job.id, "status": "queued"}
+
+@router.get("/admin/matches/generate/status")
+async def admin_generate_matches_status(
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    queue = _get_queue()
+    try:
+        job = Job.fetch(MATCHES_GEN_JOB_ID, connection=queue.connection)
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail="Job not found") from exc
+    return {
+        "job_id": job.id,
+        "status": job.get_status(),
+        "enqueued_at": job.enqueued_at,
+        "started_at": job.started_at,
+        "ended_at": job.ended_at,
+        "result": job.result,
+    }
+
 
 @router.post("/admin/role-keys", response_model=RoleKeyResponse)
 async def create_role_key_endpoint(
@@ -567,3 +660,25 @@ async def scheduler_endpoint(
 
     job = queue.enqueue(run_scheduler_job, job_id=SCHEDULER_JOB_ID)
     return {"job_id": job.id, "status": "queued"}
+
+
+@router.post("/admin/scheduler/matches/{match_id}/cancel")
+async def admin_cancel_match(
+    match_id: int,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    row = await cancel_match(match_id)
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
+    return row
+
+
+@router.post("/admin/scheduler/matches/{match_id}/postpone")
+async def admin_postpone_match(
+    match_id: int,
+    current_user: UserResponse = Depends(require_role("ADMIN")),
+):
+    row = await mark_match_postponed(match_id)
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
+    return row

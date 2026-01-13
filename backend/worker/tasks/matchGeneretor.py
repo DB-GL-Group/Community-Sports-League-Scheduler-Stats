@@ -1,3 +1,5 @@
+import asyncio
+
 from shared.db import close_async_pool, get_async_pool, open_async_pool
 from shared.matches import MatchStatus, add_match, get_all_matches
 from shared.teams import get_all_valid_teams
@@ -9,7 +11,11 @@ def _pair_exists(existing_pairs: set[tuple[int, int]], team_a: int, team_b: int)
 
 async def _get_existing_pairs() -> set[tuple[int, int]]:
     existing = await get_all_matches()
-    return {(m["home_team_id"], m["away_team_id"]) for m in existing}
+    return {
+        (m["home_team_id"], m["away_team_id"])
+        for m in existing
+        if m.get("status") != MatchStatus.CANCELED.value
+    }
 
 
 def _group_by_division(teams: list[dict]) -> dict[int, list[int]]:
@@ -28,10 +34,11 @@ async def generate_matches():
     try:
         teams = await get_all_valid_teams()
         if not teams:
-            return await get_all_matches()
+            return {"created": 0, "total": len(await get_all_matches())}
 
         existing_pairs = await _get_existing_pairs()
         grouped = _group_by_division(teams)
+        created_count = 0
 
         for division, team_ids in grouped.items():
             if len(team_ids) < 2:
@@ -46,12 +53,26 @@ async def generate_matches():
                         division=division,
                         home_team_id=home_id,
                         away_team_id=away_id,
-                        status=MatchStatus.SCHEDULED.value,
+                        status=MatchStatus.TBD.value,
                     )
                     if created:
                         existing_pairs.add((home_id, away_id))
+                        created_count += 1
 
-        return await get_all_matches()
+        total = len(await get_all_matches())
+        return {"created": created_count, "total": total}
     finally:
         if should_close:
             await close_async_pool()
+
+
+def run_generate_matches_job() -> dict:
+    return asyncio.run(_run_generate_matches_job())
+
+
+async def _run_generate_matches_job() -> dict:
+    await open_async_pool()
+    try:
+        return await generate_matches()
+    finally:
+        await close_async_pool()

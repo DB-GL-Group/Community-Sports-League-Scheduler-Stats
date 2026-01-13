@@ -152,7 +152,6 @@ class _StatsPageState extends State<StatsPage> {
   Widget build(BuildContext context) {
     return Template(
       pageBody: Scaffold(
-        backgroundColor: const Color(0xFF101214),
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -219,11 +218,13 @@ class _StatsPageState extends State<StatsPage> {
     if (top.isEmpty) {
       return const SizedBox.shrink();
     }
+    final colorScheme = Theme.of(context).colorScheme;
+    final onSurface = colorScheme.onSurface;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E2228), Color(0xFF15171B)],
+        gradient: LinearGradient(
+          colors: [colorScheme.surface, colorScheme.surfaceVariant],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -261,10 +262,10 @@ class _StatsPageState extends State<StatsPage> {
                   team.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: onSurface, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
-                Text('${team.points} pts', style: const TextStyle(color: Colors.white70)),
+                Text('${team.points} pts', style: TextStyle(color: onSurface.withOpacity(0.7))),
               ],
             ),
           );
@@ -276,6 +277,7 @@ class _StatsPageState extends State<StatsPage> {
   Widget _buildTeamCard(_TeamStats team) {
     final primary = _colorFromValue(team.primaryColor);
     final secondary = _colorFromValue(team.secondaryColor);
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
@@ -317,8 +319,8 @@ class _StatsPageState extends State<StatsPage> {
               Expanded(
                 child: Text(
                   team.name,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -343,7 +345,7 @@ class _StatsPageState extends State<StatsPage> {
           const SizedBox(height: 10),
           Row(
             children: [
-              const Text('Form', style: TextStyle(color: Colors.white70)),
+              Text('Form', style: TextStyle(color: onSurface.withOpacity(0.7))),
               const SizedBox(width: 8),
               ...team.form.take(5).map((entry) {
                 final color = switch (entry.result) {
@@ -382,22 +384,23 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1E24),
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(color: Colors.white70)),
+            Text(title, style: TextStyle(color: onSurface.withOpacity(0.7))),
             const SizedBox(height: 6),
             Text(
               value,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: onSurface,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -417,17 +420,18 @@ class _StatPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF23272E),
+        color: Theme.of(context).colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: [
-          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          Text(label, style: TextStyle(color: onSurface.withOpacity(0.55), fontSize: 12)),
           const SizedBox(width: 6),
-          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          Text(value, style: TextStyle(color: onSurface, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -442,13 +446,14 @@ class _MiniStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Padding(
       padding: const EdgeInsets.only(right: 12),
       child: Column(
         children: [
-          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+          Text(label, style: TextStyle(color: onSurface.withOpacity(0.55), fontSize: 11)),
           const SizedBox(height: 2),
-          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          Text(value, style: TextStyle(color: onSurface, fontWeight: FontWeight.bold)),
         ],
       ),
     );
