@@ -33,8 +33,8 @@ async def list_match_previews():
         for row in rows
     ]
 
-@router.get("/rankings")
-async def list_rankings(division: int = 1):
+@router.get("/rankings/{division}")
+async def list_rankings(division: int):
     return await get_rankings_view(division)
 
 @router.get("/{match_id}", response_model=MatchResponse)

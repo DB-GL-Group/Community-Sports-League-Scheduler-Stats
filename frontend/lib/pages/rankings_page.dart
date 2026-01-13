@@ -15,6 +15,7 @@ class RankingsPage extends StatefulWidget {
 class _RankingsPageState extends State<RankingsPage> {
   late Future<List<om.RankingEntry>> _rankingFuture;
   bool _initialized = false;
+  int _selectedDivision = 1;
 
   @override
   void didChangeDependencies() {
@@ -28,7 +29,7 @@ class _RankingsPageState extends State<RankingsPage> {
   Future<List<om.RankingEntry>> _loadRanking(ApiRouter apiRouter) async {
     List<om.RankingEntry> ranking = [];
     try {
-      final data = await apiRouter.fetchData('matches/rankings');
+      final data = await apiRouter.fetchData('matches/rankings/$_selectedDivision');
       int rank = 1;
       for (Map<String, dynamic> rkentry in data) {
         ranking.add(om.RankingEntry.fromJson(rank, rkentry));
@@ -98,6 +99,25 @@ class _RankingsPageState extends State<RankingsPage> {
             style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
           ),
           actions: [
+            DropdownButtonHideUnderline(
+              child: DropdownButton<int>(
+                value: _selectedDivision,
+                icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                dropdownColor: Theme.of(context).colorScheme.surface,
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() {
+                    _selectedDivision = value;
+                    _rankingFuture = _loadRanking(context.read<ApiRouter>());
+                  });
+                },
+                items: const [
+                  DropdownMenuItem(value: 1, child: Text('Division 1')),
+                  DropdownMenuItem(value: 2, child: Text('Division 2')),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
             Padding(
               padding: const EdgeInsets.only(right: 12),
               child: ElevatedButton(
