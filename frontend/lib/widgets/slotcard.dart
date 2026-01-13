@@ -28,7 +28,12 @@ class SlotCard extends StatelessWidget {
           leading: Icon(selected ? Icons.check_circle : Icons.radio_button_unchecked, color: selected ? Colors.green : null),
           title: Text('${slot.match} — ${DateFormat.Hm().format(slot.startTime)}–${DateFormat.Hm().format(slot.endTime)}'),
           subtitle: Text("${DateFormat.yMMMMd().format(slot.startTime)}, ${slot.venue}"),
-          trailing: disabled ? const Tooltip(message: 'Overlaps with another selected slot', child: Icon(Icons.lock)) : null,
+          trailing: disabled
+              ? const Tooltip(
+                  message: 'Locked within 24h of start',
+                  child: Icon(Icons.lock),
+                )
+              : null,
         ),
       ),
     );

@@ -6,12 +6,14 @@ class RefMatchCard extends StatelessWidget {
   final om.RefMatch match;
   final VoidCallback? onAccept;
   final VoidCallback? onDecline;
+  final bool showScore;
 
   const RefMatchCard({
     super.key,
     required this.match,
     required this.onAccept,
     required this.onDecline,
+    this.showScore = false,
   });
 
   bool get _isFinished {
@@ -22,6 +24,12 @@ class RefMatchCard extends StatelessWidget {
     final now = DateTime.now();
     final difference = match.startTime.difference(now);
     return match.status == 'Pending' && difference.inHours <= 24 && now.isBefore(match.startTime);
+  }
+
+  bool get _isLocked {
+    final now = DateTime.now();
+    final difference = match.startTime.difference(now);
+    return difference.inHours <= 24 && now.isBefore(match.startTime);
   }
 
   Color _statusColor(String status) {
@@ -57,6 +65,13 @@ class RefMatchCard extends StatelessWidget {
               '${match.home_team} vs ${match.away_team}',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
+            if (showScore && match.homeScore != null && match.awayScore != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                '${match.homeScore} - ${match.awayScore}',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
 
             const SizedBox(height: 8),
 
@@ -69,7 +84,7 @@ class RefMatchCard extends StatelessWidget {
             // Date & venue
             Text(
               '${dateFormat.format(match.startTime)} · ${match.venue}',
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              style: const TextStyle(fontSize: 13, color: Colors.white60),
             ),
 
             const SizedBox(height: 12),
@@ -83,6 +98,13 @@ class RefMatchCard extends StatelessWidget {
                   backgroundColor: _statusColor(displayStatus).withValues(alpha: 0.15),
                   labelStyle: TextStyle(color: _statusColor(displayStatus)),
                 ),
+
+                if (_isLocked)
+                  const Icon(
+                    Icons.lock,
+                    size: 20,
+                    color: Colors.white54,
+                  ),
 
                 if (_canRespond)
                   PopupMenuButton<String>(

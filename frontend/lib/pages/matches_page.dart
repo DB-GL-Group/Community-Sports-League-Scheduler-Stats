@@ -279,7 +279,12 @@ class _MatchesPageState extends State<MatchesPage> {
             'Matches',
             style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
           ),
-          actions: [ElevatedButton(onPressed: _refreshMatches, child: const Text('Refresh'))],
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: ElevatedButton(onPressed: _refreshMatches, child: const Text('Refresh')),
+            ),
+          ],
         ),
         body: FutureBuilder(future: _matches,
           builder: (context, snapshot) {

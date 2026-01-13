@@ -12,8 +12,8 @@ class Template extends StatelessWidget {
       drawer: NavBar(),
       appBar: AppBar(
         title: Text('Sports League Scheduler'),
-        backgroundColor: Color.fromARGB(255, 50, 50, 50),
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
       body: pageBody
     );

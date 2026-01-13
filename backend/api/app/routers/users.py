@@ -18,9 +18,11 @@ from ..schemas.match import (
     SubstitutionEventRequest,
 )
 from ..schemas.referee import (
+    RefereeAssignmentResponse,
     RefereeAvailabilityRequest,
     RefereeAvailabilityResponse,
     RefereeAvailabilityUpdateRequest,
+    RefereeHistoryResponse,
 )
 from ..schemas.fan import (
     NotificationSettingsRequest,
@@ -33,6 +35,7 @@ from shared.referees import (
     add_referee_availability,
     get_referee_availability,
     get_referee_matches,
+    get_referee_history,
     remove_referee_availability,
     replace_referee_availability,
     get_match_slots_without_referee
@@ -272,30 +275,24 @@ async def remove_referee_availability_slot(
 async def list_referee_openslots(current_user: UserResponse = Depends(require_role("REFEREE"))):
     if not current_user.get("person_id"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Referee profile missing")
-    rows = await get_match_slots_without_referee()
+    rows = await get_match_slots_without_referee(current_user["person_id"])
     return rows
 
 
-@router.get("/referee/matches", response_model=list[MatchPreviewResponse])
+@router.get("/referee/matches", response_model=list[RefereeAssignmentResponse])
 async def list_referee_matches(current_user: UserResponse = Depends(require_role("REFEREE"))):
     if not current_user.get("person_id"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Referee profile missing")
     rows = await get_referee_matches(current_user["person_id"])
-    return [
-        {
-            "id": row["id"],
-            "division": row["division"],
-            "status": row["status"],
-            "home_team": row["home_team"],
-            "away_team": row["away_team"],
-            "home_score": row["home_score"],
-            "away_score": row["away_score"],
-            "start_time": row["start_time"].isoformat()
-            if row.get("start_time") and hasattr(row["start_time"], "isoformat")
-            else None,
-        }
-        for row in rows
-    ]
+    return rows
+
+
+@router.get("/referee/history", response_model=list[RefereeHistoryResponse])
+async def list_referee_history(current_user: UserResponse = Depends(require_role("REFEREE"))):
+    if not current_user.get("person_id"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Referee profile missing")
+    rows = await get_referee_history(current_user["person_id"])
+    return rows
 
 
 #============= FAN =============#

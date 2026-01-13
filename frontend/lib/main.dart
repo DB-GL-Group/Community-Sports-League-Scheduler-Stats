@@ -39,9 +39,70 @@ class SportsLeagueScheduler extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final baseTheme = ThemeData.dark();
     return MaterialApp.router( // Root widget
       title: 'Sports League Scheduler',
       debugShowCheckedModeBanner: false,
+      theme: baseTheme.copyWith(
+        scaffoldBackgroundColor: const Color(0xFF101214),
+        colorScheme: baseTheme.colorScheme.copyWith(
+          primary: const Color(0xFFF57C00),
+          secondary: const Color(0xFF1976D2),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          titleTextStyle: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        cardColor: const Color(0xFF1A1E24),
+        snackBarTheme: const SnackBarThemeData(
+          backgroundColor: Color(0xFF1E2228),
+          contentTextStyle: TextStyle(color: Colors.white),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: const Color(0xFF1A1E24),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.white24),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.white24),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFF57C00)),
+          ),
+          labelStyle: const TextStyle(color: Colors.white70),
+          hintStyle: const TextStyle(color: Colors.white38),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFF57C00),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xFFFBC02D),
+          ),
+        ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: Color(0xFFF57C00),
+          foregroundColor: Colors.white,
+        ),
+        textTheme: baseTheme.textTheme.apply(
+          bodyColor: Colors.white,
+          displayColor: Colors.white,
+        ),
+      ),
       routerConfig: GoRouter(
         routes: [
           GoRoute(

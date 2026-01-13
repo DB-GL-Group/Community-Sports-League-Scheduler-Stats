@@ -645,10 +645,13 @@ class _RostersPageState extends State<RostersPage> {
             style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
           ),
           actions: [
-            ElevatedButton(
-              onPressed: _refreshPlayers,
-              child: const Text('Refresh'),
-            )
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: ElevatedButton(
+                onPressed: _refreshPlayers,
+                child: const Text('Refresh'),
+              ),
+            ),
           ],
         ),
         body: FutureBuilder<Map<String, dynamic>?>(
@@ -697,8 +700,9 @@ class _RostersPageState extends State<RostersPage> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
+                          color: const Color(0xFF1A1E24),
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white12),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

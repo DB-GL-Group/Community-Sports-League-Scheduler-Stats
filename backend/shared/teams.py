@@ -1,4 +1,5 @@
 from shared.db import get_async_pool
+from shared.colors import DEFAULT_COLOR, normalize_color
 
 async def get_all_teams_id():
     pool = get_async_pool()
@@ -34,8 +35,8 @@ async def get_all_valid_teams(min_players: int = 11):
                 "name": row[2],
                 "manager_id": row[3],
                 "short_name": row[4],
-                "color_primary": row[5],
-                "color_secondary": row[6],
+                "color_primary": normalize_color(row[5]) or DEFAULT_COLOR,
+                "color_secondary": normalize_color(row[6]) or DEFAULT_COLOR,
             }
             for row in rows
         ]
@@ -61,8 +62,8 @@ async def get_team_details(team_id: int):
             "name": row[2],
             "manager_id": row[3],
             "short_name": row[4],
-            "color_primary": row[5],
-            "color_secondary": row[6],
+            "color_primary": normalize_color(row[5]),
+            "color_secondary": normalize_color(row[6]),
             "players": players
         }
 
@@ -88,8 +89,8 @@ async def get_team_by_manager_id(manager_id: int):
             "name": row[2],
             "manager_id": row[3],
             "short_name": row[4],
-            "color_primary": row[5],
-            "color_secondary": row[6],
+            "color_primary": normalize_color(row[5]),
+            "color_secondary": normalize_color(row[6]),
             "players": players,
         }
     
@@ -111,6 +112,8 @@ async def get_team_ID_by_name(team_name: int):
 
 async def create_team(division, name, manager_id, short_name, color_primary, color_secondary):
     pool = get_async_pool()
+    color_primary = normalize_color(color_primary) or DEFAULT_COLOR
+    color_secondary = normalize_color(color_secondary) or DEFAULT_COLOR
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
             """
@@ -130,13 +133,15 @@ async def create_team(division, name, manager_id, short_name, color_primary, col
             "name": team[2],
             "manager_id": team[3],
             "short_name": team[4],
-            "color_primary": team[5],
-            "color_secondary": team[6],
+            "color_primary": normalize_color(team[5]) or DEFAULT_COLOR,
+            "color_secondary": normalize_color(team[6]) or DEFAULT_COLOR,
         }
 
 
 async def update_team(team_id, division, name, short_name, color_primary, color_secondary):
     pool = get_async_pool()
+    color_primary = normalize_color(color_primary) or DEFAULT_COLOR
+    color_secondary = normalize_color(color_secondary) or DEFAULT_COLOR
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
             """
@@ -161,8 +166,8 @@ async def update_team(team_id, division, name, short_name, color_primary, color_
             "name": team[2],
             "manager_id": team[3],
             "short_name": team[4],
-            "color_primary": team[5],
-            "color_secondary": team[6],
+            "color_primary": normalize_color(team[5]) or DEFAULT_COLOR,
+            "color_secondary": normalize_color(team[6]) or DEFAULT_COLOR,
         }
 
 

@@ -131,6 +131,8 @@ class RefMatch {
   final DateTime startTime;
   final DateTime endTime;
   final String venue;
+  final int? homeScore;
+  final int? awayScore;
 
   RefMatch({
     required this.id,
@@ -141,6 +143,8 @@ class RefMatch {
     required this.startTime,
     required this.endTime,
     required this.venue,
+    this.homeScore,
+    this.awayScore,
   });
 
   factory RefMatch.fromJson(Map<String, dynamic> json) {
@@ -153,6 +157,8 @@ class RefMatch {
       startTime: DateTime.parse(json['start_time'] as String),
       endTime: DateTime.parse(json['end_time'] as String),
       venue: json['venue'] as String,
+      homeScore: json['home_score'] as int?,
+      awayScore: json['away_score'] as int?,
     );
   }
 }

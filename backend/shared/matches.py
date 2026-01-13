@@ -2,6 +2,7 @@ from enum import Enum
 from datetime import datetime
 
 from shared.db import get_async_pool
+from shared.colors import DEFAULT_COLOR, normalize_color
 from shared.teams import get_all_teams_id, get_team_ID_by_name, get_team_details
 from shared.rankings import update_rankings_for_division
 
@@ -493,10 +494,10 @@ async def get_match_previews():
                 "home_score": row[5],
                 "away_score": row[6],
                 "start_time": row[7],
-                "home_primary_color": row[8],
-                "home_secondary_color": row[9],
-                "away_primary_color": row[10],
-                "away_secondary_color": row[11],
+                "home_primary_color": normalize_color(row[8]) or DEFAULT_COLOR,
+                "home_secondary_color": normalize_color(row[9]) or DEFAULT_COLOR,
+                "away_primary_color": normalize_color(row[10]) or DEFAULT_COLOR,
+                "away_secondary_color": normalize_color(row[11]) or DEFAULT_COLOR,
             }
             for row in rows
         ]

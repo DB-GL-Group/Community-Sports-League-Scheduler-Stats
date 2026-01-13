@@ -229,7 +229,40 @@ class _AdminConsolePageState extends State<AdminConsolePage> {
       padding: const EdgeInsets.only(top: 16, bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  Widget _panel({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1E24),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
       ),
     );
   }
@@ -238,12 +271,16 @@ class _AdminConsolePageState extends State<AdminConsolePage> {
   Widget build(BuildContext context) {
     return Template(
       pageBody: Scaffold(
+        backgroundColor: const Color(0xFF101214),
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           title: const Text('Admin Console', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
           actions: [
-            ElevatedButton(onPressed: _refreshMatches, child: const Text('Refresh')),
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: ElevatedButton(onPressed: _refreshMatches, child: const Text('Refresh')),
+            ),
           ],
         ),
         body: FutureBuilder<List<Map<String, dynamic>>>(
@@ -259,52 +296,68 @@ class _AdminConsolePageState extends State<AdminConsolePage> {
             _selectedMatch ??= matches.first;
             _eventTeamId ??= _selectedMatch!['home_team_id'] as int;
             _teamPlayers = _loadTeamPlayers(_eventTeamId!);
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  DropdownButtonFormField<int>(
-                    value: _selectedMatch?['id'] as int?,
-                    items: [
-                      for (final match in matches)
-                        DropdownMenuItem<int>(
-                          value: match['id'] as int,
-                          child: Text('${match['home_team']} vs ${match['away_team']} (#${match['id']})'),
+            final header = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _panel(
+                  title: 'Match Control',
+                  children: [
+                    DropdownButtonFormField<int>(
+                      value: _selectedMatch?['id'] as int?,
+                      items: [
+                        for (final match in matches)
+                          DropdownMenuItem<int>(
+                            value: match['id'] as int,
+                            child: Text('${match['home_team']} vs ${match['away_team']} (#${match['id']})'),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() {
+                          _selectedMatch = matches.firstWhere((m) => m['id'] == value);
+                          _eventTeamId = _selectedMatch!['home_team_id'] as int;
+                          _teamPlayers = _loadTeamPlayers(_eventTeamId!);
+                          _goalPlayerId = null;
+                          _cardPlayerId = null;
+                          _subPlayerOutId = null;
+                          _subPlayerInId = null;
+                        });
+                      },
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Select match',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_selectedMatch != null)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF121419),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white12),
                         ),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() {
-                        _selectedMatch = matches.firstWhere((m) => m['id'] == value);
-                        _eventTeamId = _selectedMatch!['home_team_id'] as int;
-                        _teamPlayers = _loadTeamPlayers(_eventTeamId!);
-                        _goalPlayerId = null;
-                        _cardPlayerId = null;
-                        _subPlayerOutId = null;
-                        _subPlayerInId = null;
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Select match',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (_selectedMatch != null)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${_selectedMatch!['home_team']} ${_selectedMatch!['home_score']} - '
+                                '${_selectedMatch!['away_score']} ${_selectedMatch!['away_team']}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            ElevatedButton(
+                              onPressed: _finalizeMatch,
+                              child: const Text('Finalize'),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Text(
-                        '${_selectedMatch!['home_team']} ${_selectedMatch!['home_score']} - '
-                        '${_selectedMatch!['away_score']} ${_selectedMatch!['away_team']}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  if (_selectedMatch != null) ...[
                     const SizedBox(height: 12),
                     DropdownButtonFormField<int>(
                       value: _eventTeamId,
@@ -335,128 +388,163 @@ class _AdminConsolePageState extends State<AdminConsolePage> {
                       ),
                     ),
                   ],
-                  _sectionTitle('Add Goal'),
-                  _playerDropdown(
-                    label: 'Scorer',
-                    value: _goalPlayerId,
-                    onChanged: (value) {
-                      setState(() {
-                        _goalPlayerId = value;
-                      });
-                    },
-                    playersFuture: _teamPlayers,
+                ),
+              ],
+            );
+
+            final goalPanel = _panel(
+              title: 'Goal',
+              children: [
+                _playerDropdown(
+                  label: 'Scorer',
+                  value: _goalPlayerId,
+                  onChanged: (value) {
+                    setState(() {
+                      _goalPlayerId = value;
+                    });
+                  },
+                  playersFuture: _teamPlayers,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _goalMinuteController,
+                  decoration: const InputDecoration(labelText: 'Minute'),
+                  keyboardType: TextInputType.number,
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Own goal'),
+                  value: _goalOwnGoal,
+                  onChanged: (value) {
+                    setState(() {
+                      _goalOwnGoal = value ?? false;
+                    });
+                  },
+                ),
+                ElevatedButton(onPressed: _submitGoal, child: const Text('Add Goal')),
+              ],
+            );
+
+            final cardPanel = _panel(
+              title: 'Card',
+              children: [
+                _playerDropdown(
+                  label: 'Player',
+                  value: _cardPlayerId,
+                  onChanged: (value) {
+                    setState(() {
+                      _cardPlayerId = value;
+                    });
+                  },
+                  playersFuture: _teamPlayers,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _cardMinuteController,
+                  decoration: const InputDecoration(labelText: 'Minute'),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: _cardType,
+                  items: const [
+                    DropdownMenuItem(value: 'Y', child: Text('Yellow')),
+                    DropdownMenuItem(value: 'Y2R', child: Text('Second Yellow')),
+                    DropdownMenuItem(value: 'R', child: Text('Red')),
+                  ],
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() {
+                      _cardType = value;
+                    });
+                  },
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'Card type',
                   ),
-                  const SizedBox(height: 8),
-                  Row(
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _cardReasonController,
+                  decoration: const InputDecoration(labelText: 'Reason (optional)'),
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(onPressed: _submitCard, child: const Text('Add Card')),
+              ],
+            );
+
+            final subPanel = _panel(
+              title: 'Substitution',
+              children: [
+                _playerDropdown(
+                  label: 'Player Out',
+                  value: _subPlayerOutId,
+                  onChanged: (value) {
+                    setState(() {
+                      _subPlayerOutId = value;
+                    });
+                  },
+                  playersFuture: _teamPlayers,
+                ),
+                const SizedBox(height: 8),
+                _playerDropdown(
+                  label: 'Player In',
+                  value: _subPlayerInId,
+                  onChanged: (value) {
+                    setState(() {
+                      _subPlayerInId = value;
+                    });
+                  },
+                  playersFuture: _teamPlayers,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _subMinuteController,
+                  decoration: const InputDecoration(labelText: 'Minute'),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(onPressed: _submitSubstitution, child: const Text('Add Substitution')),
+              ],
+            );
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth >= 1000;
+                  if (!isWide) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        header,
+                        const SizedBox(height: 16),
+                        goalPanel,
+                        const SizedBox(height: 16),
+                        cardPanel,
+                        const SizedBox(height: 16),
+                        subPanel,
+                      ],
+                    );
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _goalMinuteController,
-                          decoration: const InputDecoration(labelText: 'Minute'),
-                          keyboardType: TextInputType.number,
-                        ),
+                      header,
+                      const SizedBox(height: 16),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: goalPanel),
+                          const SizedBox(width: 16),
+                          Expanded(child: cardPanel),
+                          const SizedBox(width: 16),
+                          Expanded(child: subPanel),
+                        ],
                       ),
                     ],
-                  ),
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Own goal'),
-                    value: _goalOwnGoal,
-                    onChanged: (value) {
-                      setState(() {
-                        _goalOwnGoal = value ?? false;
-                      });
-                    },
-                  ),
-                  ElevatedButton(onPressed: _submitGoal, child: const Text('Add Goal')),
-                  _sectionTitle('Add Card'),
-                  _playerDropdown(
-                    label: 'Player',
-                    value: _cardPlayerId,
-                    onChanged: (value) {
-                      setState(() {
-                        _cardPlayerId = value;
-                      });
-                    },
-                    playersFuture: _teamPlayers,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _cardMinuteController,
-                          decoration: const InputDecoration(labelText: 'Minute'),
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: _cardType,
-                    items: const [
-                      DropdownMenuItem(value: 'Y', child: Text('Yellow')),
-                      DropdownMenuItem(value: 'Y2R', child: Text('Second Yellow')),
-                      DropdownMenuItem(value: 'R', child: Text('Red')),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() {
-                        _cardType = value;
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Card type',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _cardReasonController,
-                    decoration: const InputDecoration(labelText: 'Reason (optional)'),
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton(onPressed: _submitCard, child: const Text('Add Card')),
-                  _sectionTitle('Add Substitution'),
-                  _playerDropdown(
-                    label: 'Player Out',
-                    value: _subPlayerOutId,
-                    onChanged: (value) {
-                      setState(() {
-                        _subPlayerOutId = value;
-                      });
-                    },
-                    playersFuture: _teamPlayers,
-                  ),
-                  const SizedBox(height: 8),
-                  _playerDropdown(
-                    label: 'Player In',
-                    value: _subPlayerInId,
-                    onChanged: (value) {
-                      setState(() {
-                        _subPlayerInId = value;
-                      });
-                    },
-                    playersFuture: _teamPlayers,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _subMinuteController,
-                          decoration: const InputDecoration(labelText: 'Minute'),
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton(onPressed: _submitSubstitution, child: const Text('Add Substitution')),
-                  _sectionTitle('Finalize Match'),
-                  ElevatedButton(onPressed: _finalizeMatch, child: const Text('Finalize Match')),
-                ],
+                  );
+                },
               ),
             );
           },

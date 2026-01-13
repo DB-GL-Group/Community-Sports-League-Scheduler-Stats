@@ -53,6 +53,39 @@ class _RankingsPageState extends State<RankingsPage> {
     return ranking;
   }
 
+  Color _colorFromValue(String? value) {
+    if (value == null || value.isEmpty) {
+      return const Color(0xFF9E9E9E);
+    }
+    const named = {
+      'red': 0xFFD32F2F,
+      'blue': 0xFF1976D2,
+      'green': 0xFF388E3C,
+      'yellow': 0xFFFBC02D,
+      'orange': 0xFFF57C00,
+      'purple': 0xFF7B1FA2,
+      'black': 0xFF212121,
+      'white': 0xFFFFFFFF,
+      'grey': 0xFF616161,
+      'gray': 0xFF616161,
+      'lightgrey': 0xFFE0E0E0,
+      'lightgray': 0xFFE0E0E0,
+    };
+    final lowered = value.toLowerCase();
+    if (named.containsKey(lowered)) {
+      return Color(named[lowered]!);
+    }
+    final cleanHex = value.replaceAll('#', '');
+    if (cleanHex.length != 6) {
+      return const Color(0xFF9E9E9E);
+    }
+    try {
+      return Color(int.parse('FF$cleanHex', radix: 16));
+    } catch (_) {
+      return const Color(0xFF9E9E9E);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Template(
@@ -65,10 +98,13 @@ class _RankingsPageState extends State<RankingsPage> {
             style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
           ),
           actions: [
-            ElevatedButton(
-              onPressed: _refreshRanking,
-              child: const Text('Refresh'),
-            )
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: ElevatedButton(
+                onPressed: _refreshRanking,
+                child: const Text('Refresh'),
+              ),
+            ),
           ],
         ),
         body: FutureBuilder<List<om.RankingEntry>>(
@@ -97,8 +133,8 @@ class _RankingsPageState extends State<RankingsPage> {
                     DataColumn(label: Text('GD', style: TextStyle(fontWeight: FontWeight.bold))),
                   ],
                   rows: ranking.map((entry) {
-                    final primaryColor = Color(int.parse('0xff${entry.team_primary_color.substring(1)}'));
-                    final secondaryColor = Color(int.parse('0xff${entry.team_secondary_color.substring(1)}'));
+                    final primaryColor = _colorFromValue(entry.team_primary_color);
+                    final secondaryColor = _colorFromValue(entry.team_secondary_color);
 
                     return DataRow(
                       cells: [

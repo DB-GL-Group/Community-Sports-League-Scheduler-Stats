@@ -15,6 +15,7 @@ class AssignmentsPage extends StatefulWidget {
 
 class _AssignmentsPageState extends State<AssignmentsPage> {
   late Future<List<om.RefMatch>> _refMatches;
+  late Future<List<om.RefMatch>> _refHistory;
   bool _initialized = false;
 
   @override
@@ -22,6 +23,7 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
     super.didChangeDependencies();
     if (!_initialized) {
       _refMatches = _loadRefMatches(context.read<ApiRouter>());
+      _refHistory = _loadRefHistory(context.read<ApiRouter>());
       _initialized = true;
     }
   }
@@ -41,10 +43,27 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
     }
   }
 
+  Future<List<om.RefMatch>> _loadRefHistory(ApiRouter apiRouter) async {
+    List<om.RefMatch> matches = [];
+    try {
+      final token = context.read<AuthProvider>().user?.access_token ?? '';
+      final matchesData = await apiRouter.fetchData("user/referee/history", token: token);
+      for (var matchJson in matchesData) {
+        matches.add(om.RefMatch.fromJson(matchJson));
+      }
+    } catch (e) {
+      throw Exception("Error loading ref history: $e");
+    } finally {
+      return Future.value(matches);
+    }
+  }
+
   Future<void> _refreshMatches() async {
     final refMatches = await _loadRefMatches(context.read<ApiRouter>());
+    final historyMatches = await _loadRefHistory(context.read<ApiRouter>());
     setState(() {
       _refMatches = Future.value(refMatches);
+      _refHistory = Future.value(historyMatches);
     });
   }
 
@@ -56,7 +75,9 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
   @override
   Widget build(BuildContext context) {
     return Template(
-      pageBody: Scaffold(
+      pageBody: DefaultTabController(
+        length: 2,
+        child: Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -64,52 +85,102 @@ class _AssignmentsPageState extends State<AssignmentsPage> {
             'Assignments',
             style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
           ),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Assignments'),
+              Tab(text: 'History'),
+            ],
+          ),
           actions: [
-            ElevatedButton(
-              onPressed: _refreshMatches,
-              child: const Text('Refresh'),
-            )
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: ElevatedButton(
+                onPressed: _refreshMatches,
+                child: const Text('Refresh'),
+              ),
+            ),
           ],
         ),
-        body: FutureBuilder<List<om.RefMatch>>(
-          future: _refMatches,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            }
-
-            if (snapshot.hasError) {
-              return const Center(
-                child: Text('Error loading ref matches'),
-              );
-            }
-
-            final matches = _sortMatches([...snapshot.data!]);
-
-            return RefreshIndicator(
-              onRefresh: _refreshMatches,
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: matches.length,
-                itemBuilder: (context, index) {
-                  final match = matches[index];
-
-                  return RefMatchCard(
-                    match: match,
-                    onAccept: () {
-                      // update match status in db
-                    },
-                    onDecline: () {
-                      // update match status in db
-                    }
+        body: TabBarView(
+          children: [
+            FutureBuilder<List<om.RefMatch>>(
+              future: _refMatches,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
                   );
-                },
-              ),
-            );
-          },
+                }
+
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text('Error loading ref matches'),
+                  );
+                }
+
+                final matches = _sortMatches([...snapshot.data!]);
+
+                return RefreshIndicator(
+                  onRefresh: _refreshMatches,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: matches.length,
+                    itemBuilder: (context, index) {
+                      final match = matches[index];
+
+                      return RefMatchCard(
+                        match: match,
+                        onAccept: () {
+                          // update match status in db
+                        },
+                        onDecline: () {
+                          // update match status in db
+                        }
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+            FutureBuilder<List<om.RefMatch>>(
+              future: _refHistory,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text('Error loading history'),
+                  );
+                }
+
+                final matches = _sortMatches([...snapshot.data!]);
+
+                return RefreshIndicator(
+                  onRefresh: _refreshMatches,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: matches.length,
+                    itemBuilder: (context, index) {
+                      final match = matches[index];
+
+                      return RefMatchCard(
+                        match: match,
+                        onAccept: null,
+                        onDecline: null,
+                        showScore: true,
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ],
         ),
+      ),
       ),
     );
   }

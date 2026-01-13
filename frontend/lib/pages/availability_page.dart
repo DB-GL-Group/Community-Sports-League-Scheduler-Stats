@@ -28,24 +28,24 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
   }
 
   Future<List<om.Slot>> _loadSlotsAndAvailability(ApiRouter apiRouter) async {
-    List<om.Slot> slots = [];
-    List<om.Slot> existing = [];
+    final Map<int, om.Slot> slotsById = {};
     try {
       final token = context.read<AuthProvider>().user?.access_token ?? '';
       final slotData = await apiRouter.fetchData("user/referee/openslots", token: token);
       final availabilityData = await apiRouter.fetchData("user/referee/availability", token: token);
       for (var slotJson in slotData) {
-        slots.add(om.Slot.fromJson(slotJson));
+        final slot = om.Slot.fromJson(slotJson);
+        slotsById[slot.id] = slot;
       }
       for (var slotJson in availabilityData) {
         final slot = om.Slot.fromJson(slotJson);
-        existing.add(slot);
+        slotsById[slot.id] = slot;
         _selectedSlotIds.add(slot.id); // pre-select
       }
     } catch (e) {
       throw Exception("Error loading slots: $e");
     } finally {
-      return Future.value([...slots, ...existing]);
+      return Future.value(slotsById.values.toList());
     }
     // _selectedSlotIds.add(2);
     // return [
@@ -70,6 +70,9 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
       _selectedSlotIds.contains(slot.id);
 
   void _toggleSlot(om.Slot slot) {
+    if (_isLocked(slot) && _isSelected(slot)) {
+      return;
+    }
     setState(() {
       if (_isSelected(slot)) {
         _selectedSlotIds.remove(slot.id);
@@ -77,6 +80,13 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
         _selectedSlotIds.add(slot.id);
       }
     });
+  }
+
+  bool _isLocked(om.Slot slot) {
+    if (!_isSelected(slot)) return false;
+    final now = DateTime.now();
+    final difference = slot.startTime.difference(now);
+    return difference.inHours <= 24 && now.isBefore(slot.startTime);
   }
 
   List<om.Slot> _sortSlots(List<om.Slot> slots) {
@@ -96,10 +106,13 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
             style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
           ),
           actions: [
-            ElevatedButton(
-              onPressed: _refreshSlots,
-              child: const Text('Refresh'),
-            )
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: ElevatedButton(
+                onPressed: _refreshSlots,
+                child: const Text('Refresh'),
+              ),
+            ),
           ],
         ),
         body: FutureBuilder<List<om.Slot>>(
@@ -128,8 +141,14 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
                 itemBuilder: (context, index) {
                   final slot = slots[index];
                   final selected = _isSelected(slot);
+                  final locked = _isLocked(slot);
 
-                  return SlotCard(slot: slot, selected: selected, disabled: false, onTap: () => _toggleSlot(slot));
+                  return SlotCard(
+                    slot: slot,
+                    selected: selected,
+                    disabled: locked,
+                    onTap: () => _toggleSlot(slot),
+                  );
                 },
               ),
             );

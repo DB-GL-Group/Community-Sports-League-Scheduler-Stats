@@ -1,4 +1,5 @@
 from shared.db import get_async_pool
+from shared.colors import DEFAULT_COLOR, normalize_color
 
 
 async def _get_division_teams(division: int):
@@ -30,8 +31,8 @@ async def _get_division_team_colors(division: int):
         rows = await cur.fetchall()
         return {
             row[0]: {
-                "team_primary_color": row[1],
-                "team_secondary_color": row[2],
+                "team_primary_color": normalize_color(row[1]) or DEFAULT_COLOR,
+                "team_secondary_color": normalize_color(row[2]) or DEFAULT_COLOR,
             }
             for row in rows
         }
