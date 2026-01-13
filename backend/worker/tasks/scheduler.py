@@ -19,7 +19,7 @@ from shared.matches import (
 from shared.courts import add_court, generate_slots, get_all_courts
 from shared.venues import add_venue
 from shared.teams import create_team, add_player
-from shared.slots import get_all_slots, is_next_slot_possible
+from shared.slots import get_all_slots, are_both_next_slots_possible
 from shared.db import close_async_pool, open_async_pool
 from worker.tasks.matchGeneretor import generate_matches
 
@@ -81,7 +81,7 @@ async def _run_scheduler_job() -> None:
             slots_iterator = 0
             while slots_iterator < len(all_current_available_slots):
                 slot = all_current_available_slots[slots_iterator]                  # selects slot
-                verif_1 = await is_next_slot_possible(slot, teams[0], teams[1])   # checks if next_slot doesn't contain either a match or a match, where one of the teams is playing
+                verif_1 = await are_both_next_slots_possible(slot, teams[0], teams[1])   # checks if next_slot doesn't contain either a match or a match, where one of the teams is playing
                 verif_2 = True                                                      # TODO : check if player none of the players are playing in a match that is at the same time.
 
                 verdict = verif_1 and verif_2
