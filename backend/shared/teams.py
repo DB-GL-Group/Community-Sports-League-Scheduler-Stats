@@ -106,7 +106,6 @@ async def get_team_ID_by_name(team_name: int):
         )
         row = await cur.fetchone()
         if not row:
-            print("BBBAAAAAAALLLLLLSSSSS")
             return {}
         return {"id": row[0]}
 

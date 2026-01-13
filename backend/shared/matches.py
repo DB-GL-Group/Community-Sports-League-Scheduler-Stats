@@ -522,7 +522,6 @@ async def get_match_details(match_id: int):
         )
         row = await cur.fetchone()
         if not row:
-            print("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
             return {}
         
         ht_details = await get_team_details(row[3])
@@ -632,7 +631,6 @@ async def schedule_match(match_id: int, slot_id: int):
         if existing_slot and existing_match:
             return {"status": "exists", "match_id": match_id, "slot_id": slot_id}
 
-        print("BOUUUUTTTTT OTTTOTTOOTOTOT INNSSSSEEEERRRRTTTT INTO MATCH_SLOT")
         await cur.execute(
             """
             INSERT INTO match_slot (slot_id, match_id)
