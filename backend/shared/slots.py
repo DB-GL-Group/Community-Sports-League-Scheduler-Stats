@@ -75,7 +75,6 @@ async def is_next_slot_possible(current_slot, h_team_id, a_team_id): # return bo
             if not next_slot_match_id: # if no match return final True.
                 return True
             else: # checks whether or not any one of the teams in the current_slot are found in the next_slot that has a match sloted.
-                print("SUIIIIIIIIIIII", next_slot_match_id, await get_match_at_slot(next_slot_match_id))
                 next_teams_ids = await get_home_and_away_teams_from_match_id(await get_match_at_slot(next_slot_match_id))
                 if h_team_id in next_teams_ids or a_team_id in next_teams_ids:
                     return False

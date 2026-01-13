@@ -107,7 +107,7 @@ async def get_team_ID_by_name(team_name: int):
         row = await cur.fetchone()
         if not row:
             return {}
-        return {"id": row}
+        return {"id": row[0]}
 
 async def create_team(division, name, manager_id, short_name, color_primary, color_secondary):
     pool = get_async_pool()
