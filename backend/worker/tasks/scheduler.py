@@ -82,8 +82,8 @@ async def _run_scheduler_job() -> None:
         season_start_date = current_date
         season_end_date = current_date + timedelta(days=minimum_number_of_match_days)
 
-        for i in all_courts:
-            proceed = await generate_slots(court1_id, season_start_date, season_end_date)
+        for court in all_courts:
+            proceed = await generate_slots(court["id"], season_start_date, season_end_date)
         
         # Schedule
         # Going to change the system.
