@@ -440,6 +440,20 @@ async def list_matches_in_progress():
         ]
 
 
+async def clear_match_schedule():
+    pool = get_async_pool()
+    async with pool.connection() as conn, conn.cursor() as cur:
+        await cur.execute("DELETE FROM ref_dispos")
+        await cur.execute("DELETE FROM match_referees")
+        await cur.execute("DELETE FROM match_slot")
+        await cur.execute("DELETE FROM slots")
+        await cur.execute("DELETE FROM lineups")
+        await cur.execute("DELETE FROM goals")
+        await cur.execute("DELETE FROM cards")
+        await cur.execute("DELETE FROM substitutions")
+        await conn.commit()
+
+
 async def get_match_previews():
     pool = get_async_pool()
     async with pool.connection() as conn, conn.cursor() as cur:

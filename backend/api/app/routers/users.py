@@ -70,8 +70,8 @@ from shared.role_keys import create_role_key
 
 from helper.players import populate_players
 
-from worker.tasks.matchGeneretor import generate_matches
-from helper.redis import MATCHES_GEN_JOB_ID, _ACTIVE_STATUSES, _get_queue
+from worker.tasks.scheduler import run_scheduler_job
+from helper.redis import MATCHES_GEN_JOB_ID, SCHEDULER_JOB_ID, _ACTIVE_STATUSES, _get_queue
 
 from fastapi import APIRouter, HTTPException, status
 from redis import Redis
@@ -549,13 +549,13 @@ async def create_role_key_endpoint(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Key generation failed")
     return {"role": created["role_name"], "key": created["token"]}
 
-@router.post("/admin/generate_matches/run")
-async def generate_matches_endpoint(
+@router.post("/admin/scheduler/run")
+async def scheduler_endpoint(
     current_user: UserResponse = Depends(require_role("ADMIN")),
 ):
     queue = _get_queue()
     try:
-        existing_job = Job.fetch(MATCHES_GEN_JOB_ID, connection=queue.connection)
+        existing_job = Job.fetch(SCHEDULER_JOB_ID, connection=queue.connection)
     except Exception:
         existing_job = None
 
@@ -568,5 +568,5 @@ async def generate_matches_endpoint(
             )
         existing_job.delete()
 
-    job = queue.enqueue(generate_matches, job_id=MATCHES_GEN_JOB_ID)
+    job = queue.enqueue(run_scheduler_job, job_id=SCHEDULER_JOB_ID)
     return {"job_id": job.id, "status": "queued"}

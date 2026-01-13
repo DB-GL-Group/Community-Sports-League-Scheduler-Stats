@@ -7,7 +7,15 @@ from shared.referees import create_referee
 from shared.persons import create_person
 from shared.players import create_player
 from shared.managers import create_manager
-from shared.matches import addScore, add_match, get_all_matches, schedule_match, get_match_details, get_home_and_away_teams_from_match_id
+from shared.matches import (
+    addScore,
+    add_match,
+    clear_match_schedule,
+    get_all_matches,
+    schedule_match,
+    get_match_details,
+    get_home_and_away_teams_from_match_id,
+)
 from shared.courts import add_court, generate_slots, get_all_courts
 from shared.venues import add_venue
 from shared.teams import create_team, add_player
@@ -25,42 +33,9 @@ def run_scheduler_job() -> None:
 async def _run_scheduler_job() -> None:
     await open_async_pool()
     try:
-        # TEST REMOVE AFTERWARDS AND USE LOGIC BELOW: "Implement scheduler logic ////////////////////////////////////////////////////////
-        division = 1
-
-        person1 = await create_person("John", "Doe")
-        person2 = await create_person("Jane", "Dough")
-        person3 = await create_person("Jack", "Daniels")
-        person4 = await create_person("Ref", "Eree")
-
-        player1 = await create_player("Mark", "Evans")
-        player2 = await create_player("Axel", "Blaze")
-        player3 = await create_player("Ubi", "Soft")
-
-        JohnDoeManager_id = (await create_manager(person1["id"]))["id"]
-        JaneDoughManager_id = (await create_manager(person2["id"]))["id"]
-        JackDanielsManager_id = (await create_manager(person3["id"]))["id"]
-
-        ref = await create_referee(person4["id"])
-
-        home_team_id = (await create_team(division, "The flightless sharks", JohnDoeManager_id, "FLS", "Blue", "White"))["id"]
-        away_team1_id = (await create_team(division, "The Thirsty Fish", JaneDoughManager_id, "TTF", "Purple", "Yellow"))["id"]
-        away_team2_id = (await create_team(division, "The flexible rocks", JackDanielsManager_id, "TFR", "Grey", "LightGrey"))["id"]
-
-        await add_player(player1["id"], home_team_id, 1)
-        await add_player(player2["id"], away_team1_id, 2)
-        await add_player(player3["id"], away_team2_id, 3)
-
-        match1 = await add_match(division, home_team_id, away_team1_id, "in_progress")
-        match2 = await add_match(division, home_team_id, away_team2_id, "scheduled")
-        match3 = await add_match(division, away_team1_id, away_team2_id, "scheduled")
-
-        all_unscheduled_matches = await get_all_matches()
-        # # END OF TEST //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-        # #Implement scheduler logic
-        # all_unscheduled_matches = await generate_matches()
+        await clear_match_schedule()
+        # Implement scheduler logic
+        all_unscheduled_matches = await generate_matches()
         nbr_of_matches = len(all_unscheduled_matches)
 
         # Dates

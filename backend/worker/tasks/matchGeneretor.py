@@ -1,67 +1,57 @@
-import asyncio
-import logging
-import time
-from datetime import datetime, timedelta, timezone
-
-from shared.courts import add_court
-from shared.db import close_async_pool, open_async_pool
-from shared.managers import create_manager
-from shared.matches import addScore, add_match, get_all_matches
-from shared.players import create_player
-from shared.referees import create_referee
-from shared.teams import add_player, create_team
-from shared.venues import add_venue
-from shared.courts import generate_slots
+from shared.db import close_async_pool, get_async_pool, open_async_pool
+from shared.matches import MatchStatus, add_match, get_all_matches
+from shared.teams import get_all_valid_teams
 
 
-
-# //////////////////// JUST A TEMPLATE.. CODE DOESN'T ACTUALLY WORK ////////////////////
-
-
+def _pair_exists(existing_pairs: set[tuple[int, int]], team_a: int, team_b: int) -> bool:
+    return (team_a, team_b) in existing_pairs or (team_b, team_a) in existing_pairs
 
 
-async def generate_matches(): # return us all of the matches
-    await open_async_pool()
+async def _get_existing_pairs() -> set[tuple[int, int]]:
+    existing = await get_all_matches()
+    return {(m["home_team_id"], m["away_team_id"]) for m in existing}
+
+
+def _group_by_division(teams: list[dict]) -> dict[int, list[int]]:
+    grouped: dict[int, list[int]] = {}
+    for team in teams:
+        division = team["division"]
+        grouped.setdefault(division, []).append(team["id"])
+    return grouped
+
+
+async def generate_matches():
+    pool = get_async_pool()
+    should_close = pool.closed
+    if should_close:
+        await open_async_pool()
     try:
-        # Rules
-        # 1. A player cannot play in a match, in which he is in both teams.
+        teams = await get_all_valid_teams()
+        if not teams:
+            return await get_all_matches()
 
-        
+        existing_pairs = await _get_existing_pairs()
+        grouped = _group_by_division(teams)
 
+        for division, team_ids in grouped.items():
+            if len(team_ids) < 2:
+                continue
+            for i in range(len(team_ids)):
+                for j in range(i + 1, len(team_ids)):
+                    home_id = team_ids[i]
+                    away_id = team_ids[j]
+                    if _pair_exists(existing_pairs, home_id, away_id):
+                        continue
+                    created = await add_match(
+                        division=division,
+                        home_team_id=home_id,
+                        away_team_id=away_id,
+                        status=MatchStatus.SCHEDULED.value,
+                    )
+                    if created:
+                        existing_pairs.add((home_id, away_id))
 
-        # Teams are created and managed by managers
-        home_team_id = (await create_team(division, "The flightless sharks", JohnDoeManager_id, "FLS", "Blue", "White"))["id"]
-        away_team1_id = (await create_team(division, "The Thirsty Fish", JaneDoughManager_id, "TTF", "Purple", "Yellow"))["id"]
-        away_team2_id = (await create_team(division, "The flexible rocks", JackDanielsManager_id, "TFR", "Grey", "LightGrey"))["id"]
-
-        # Players are managed by managers
-        player1 = await create_player("Mark", "Evans", "+41 890 890 90")
-        player2 = await create_player("Axel", "Blaze", "+41 098 098 09")
-        player3 = await create_player("Ubi", "Soft", "+41 685 752 65")
-        await add_player(player1["id"], home_team_id)
-        await add_player(player2["id"], away_team1_id)
-        await add_player(player3["id"], away_team2_id)
-
-        # Refs
-        ref_id = (await create_referee("Reeses", "Puffs", "+12 456 456 45"))["id"]
-
-        # Matches
-        match1 = await add_match(division, court1_slots[current_court1_slot if current_court1_slot < total_available_court1_slots else Exception], home_team_id, away_team1_id, ref_id, "Active")
-        match2 = await add_match(division, slot2, home_team_id, away_team2_id, ref_id, "Awaiting")
-        match3 = await add_match(division, slot3, away_team1_id, away_team2_id, ref_id, "Awaiting")
-
-        # print(await get_all_matches())
-
-
-        # # Final
-        # finalists = await get_finalists()
-        # finalsMatch = await add_match(
-        #     division, finals_slot, finalists[0], finalists[1], ref_id, "Awaiting"
-        # )
-
-        # await addScore(finalsMatch["id"], home_team_id, "home", player1["id"], time.time(), False)
-
-        print("This is the end of ze match creation my friend.")
-        return get_all_matches()
+        return await get_all_matches()
     finally:
-        await close_async_pool()
+        if should_close:
+            await close_async_pool()
