@@ -9,9 +9,19 @@ class ScoreTab extends StatelessWidget {
     required this.match,
   });
 
-  Color _hexToColor(String hex) {
+  Color _hexToColor(String? hex) {
+    if (hex == null || hex.isEmpty) {
+      return const Color(0xFF9E9E9E);
+    }
     final value = hex.replaceFirst('#', '');
-    return Color(int.parse('FF$value', radix: 16));
+    if (value.length != 6) {
+      return const Color(0xFF9E9E9E);
+    }
+    try {
+      return Color(int.parse('FF$value', radix: 16));
+    } catch (_) {
+      return const Color(0xFF9E9E9E);
+    }
   }
 
   @override

@@ -25,7 +25,7 @@ class PlayersTab extends StatelessWidget {
       children: team.players.map((player) {
         return ListTile(
           leading: Text(
-            '#${player.number}',
+            player.number != null ? '#${player.number}' : '#-',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           title: Text('${player.firstName} ${player.lastName}'),
