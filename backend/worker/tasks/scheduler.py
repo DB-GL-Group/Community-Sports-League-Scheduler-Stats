@@ -19,7 +19,7 @@ from shared.matches import (
 from shared.courts import add_court, generate_slots, get_all_courts
 from shared.venues import add_venue
 from shared.teams import create_team, add_player
-from shared.slots import get_all_slots, are_both_next_slots_possible
+from shared.slots import get_all_slots, are_both_next_slots_possible, are_parallel_matches_possible
 from shared.db import close_async_pool, open_async_pool
 from worker.tasks.matchGeneretor import generate_matches
 
@@ -65,8 +65,9 @@ async def _run_scheduler_job() -> None:
         # It's going to be scheduled day by day.
         # So here we receive valid matches. So no same player, two teams.
         # ////// Rules //////
-        # 1. Teleportation is authorized. I player can play the very next match slot in another venue.
-        # 2. Once a team has played a match, they can't play in the immediate next one.
+        # 1. Once a team has played a match, they can't play in the immediate next one. => verif_1
+        # 2. Teleportation is authorized. I player can play the very next match slot in another venue. => verif_2
+        # 3. A team cannot play in two seperate matches at the same time. => verif_2
         
         for current_match in list(reversed(all_unscheduled_matches)): # Goes through all the matches from the end,
                                                             # so when we remove one, it doesn't do anything unexpected.
@@ -81,15 +82,15 @@ async def _run_scheduler_job() -> None:
             slots_iterator = 0
             while slots_iterator < len(all_current_available_slots):
                 slot = all_current_available_slots[slots_iterator]                  # selects slot
-                verif_1 = await are_both_next_slots_possible(slot, teams[0], teams[1])   # checks if next_slot doesn't contain either a match or a match, where one of the teams is playing
-                verif_2 = True                                                      # TODO : check if player none of the players are playing in a match that is at the same time.
+                verif_1 = await are_both_next_slots_possible(slot, teams[0], teams[1]) # checks if next_slot and previous_slot don't contain either a match or a match, where one of the teams is playing
+                verif_2 = await are_parallel_matches_possible(slot, teams[0], teams[1])  # checks if no parallel match is played by our team and checks if player none of the players are playing in a match that is at the same time.
 
                 verdict = verif_1 and verif_2
                 if verdict:
-                    proceed = await schedule_match(current_match["id"], slot["id"]) # SCHEDULES MATCH + TODO DONT FORGET TO MATCHES.ADD_MATCH_SLOT_ID !!!!
+                    proceed = await schedule_match(current_match["id"], slot["id"]) # SCHEDULES MATCH
                     all_unscheduled_matches.pop(-1)
                     break
-                slots_iterator += 1                                             # Here FAILED so moves on to the next slot available.
+                slots_iterator += 1                                             # Here FAILED so moves on to the next available slot.
 
 
 
