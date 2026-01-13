@@ -41,7 +41,7 @@ class MatchResponse(BaseModel):
     start_time: Optional[str] = None
     current_time: str
     main_referee: str
-    venue: str
+    venue: Optional[str] = None
     notes: str
 
 

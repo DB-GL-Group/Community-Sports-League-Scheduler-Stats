@@ -19,17 +19,17 @@ class InfoTab extends StatelessWidget {
         ListTile(
           leading: const Icon(Icons.person),
           title: const Text('Referee'),
-          subtitle: Text(match.mainReferee),
+          subtitle: Text(match.mainReferee.isNotEmpty ? match.mainReferee : 'TBD'),
         ),
         ListTile(
           leading: const Icon(Icons.place),
           title: const Text('Place'),
-          subtitle: Text(match.venue),
+          subtitle: Text(match.venue?.isNotEmpty == true ? match.venue! : 'TBD'),
         ),
         ListTile(
           leading: const Icon(Icons.schedule),
           title: const Text('Start time'),
-          subtitle: Text(match.startTime.toLocal().toString()),
+          subtitle: Text(match.startTime != null ? match.startTime!.toLocal().toString() : 'TBD'),
         ),
         if (match.notes != null && match.notes!.isNotEmpty)
           ListTile(

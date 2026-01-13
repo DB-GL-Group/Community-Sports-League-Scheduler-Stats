@@ -172,11 +172,12 @@ class Player {
   });
 
   factory Player.fromJson(Map<String, dynamic> json) {
+    final numberValue = json['number'];
     return Player(
       id: json['id'] as int,
-      firstName: json['firstName'] as String,
-      lastName: json['lastName'] as String,
-      number: json['number'] ? json['number'] as int : null,
+      firstName: (json['first_name'] ?? json['firstName'] ?? '') as String,
+      lastName: (json['last_name'] ?? json['lastName'] ?? '') as String,
+      number: numberValue is int ? numberValue : int.tryParse(numberValue?.toString() ?? ''),
     );
   }
 }
@@ -190,11 +191,11 @@ class MatchDetail {
   final TeamDetail awayTeam;
   final int homeScore;
   final int awayScore;
-  final DateTime startTime;
+  final DateTime? startTime;
   final DateTime currentTime;
   final String mainReferee;
   final String? notes;
-  final String venue;
+  final String? venue;
 
   MatchDetail({
     required this.id,
@@ -212,6 +213,7 @@ class MatchDetail {
   });
 
   factory MatchDetail.fromJson(Map<String, dynamic> json) {
+    final startTimeRaw = json['start_time'];
     return MatchDetail(
       id: json['id'] as int,
       division: json['division'] as int,
@@ -220,11 +222,11 @@ class MatchDetail {
       awayTeam: TeamDetail.fromJson(json['away_team']),
       homeScore: json['home_score'] as int,
       awayScore: json['away_score'] as int,
-      startTime: DateTime.parse(json['start_time'] as String),
+      startTime: startTimeRaw == null ? null : DateTime.parse(startTimeRaw as String),
       currentTime: DateTime.parse(json['current_time'] as String),
-      mainReferee: json['main_referee'] as String,
-      notes: json['notes'] as String,
-      venue: json['venue'] as String,
+      mainReferee: (json['main_referee'] ?? '') as String,
+      notes: json['notes'] as String?,
+      venue: json['venue'] as String?,
     );
   }
 }
@@ -234,10 +236,10 @@ class TeamDetail {
   final int id;
   final int division;
   final String name;
-  final int managerId;
-  final String shortName;
-  final String primaryColor;
-  final String secondaryColor;
+  final int? managerId;
+  final String? shortName;
+  final String? primaryColor;
+  final String? secondaryColor;
   final List<Player> players;
 
   TeamDetail({
@@ -256,11 +258,11 @@ class TeamDetail {
       id: json['id'] as int,
       division: json['division'] as int,
       name: json['name'] as String,
-      managerId: json['manager_id'] as int,
-      shortName: json['short_name'] as String,
-      primaryColor: json['color_primary'] as String,
-      secondaryColor: json['color_secondary'] as String,
-      players: (json['players'] as List).map((p) => Player.fromJson(p)).toList(),
+      managerId: json['manager_id'] as int?,
+      shortName: json['short_name'] as String?,
+      primaryColor: json['color_primary'] as String?,
+      secondaryColor: json['color_secondary'] as String?,
+      players: (json['players'] as List? ?? []).map((p) => Player.fromJson(p)).toList(),
     );
   }
 }
