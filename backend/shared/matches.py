@@ -543,8 +543,8 @@ async def get_match_details(match_id: int):
         }
 
 async def get_home_and_away_teams_from_match_id(match_id):
-    home_team_id = (await get_team_ID_by_name((await get_match_details(match_id))["home_team"]))["id"]
-    away_team_id = (await get_team_ID_by_name((await get_match_details(match_id))["away_team"]))["id"]
+    home_team_id = ( await get_team_ID_by_name( (await get_match_details(match_id))["home_team"]["name"] ) )["id"]
+    away_team_id = ( await get_team_ID_by_name( (await get_match_details(match_id))["away_team"]["name"] ) )["id"]
     return [home_team_id, away_team_id]
 
 async def perform_tie_breaker(home_team_id, away_team_id):

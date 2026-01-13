@@ -113,32 +113,14 @@ async def _run_scheduler_job() -> None:
                 verdict = verif_1 and verif_2
                 if verdict:
                     proceed = await schedule_match(current_match["id"], slot["id"]) # SCHEDULES MATCH + TODO DONT FORGET TO MATCHES.ADD_MATCH_SLOT_ID !!!!
-                    all_unscheduled_matches
+                    all_unscheduled_matches.pop(-1)
+                    break
                 slots_iterator += 1                                             # Here FAILED so moves on to the next slot available.
 
 
 
-        # if len(all_unscheduled_matches) != 0:
-        #     raise Exception("SOME MATCHES WERE NOT SCHEDULED !!") # not good.
-
-
-
-        # nbr_matches_per_court = nbr_of_matches // nbr_of_courts
-        # for i in range(nbr_of_courts):
-        #     next_team_ban_IDs = [-1, -1] # team id's so that the next slot isn't played by either team.
-        #     for j in range(nbr_matches_per_court):
-        #         match_offset = i*nbr_matches_per_court + j # offset for each court
-        #         match_id = all_unscheduled_matches(match_offset)["match_id"]
-
-        #         h_team_id, a_team_id = (await get_new_next_team_ban_IDs(match_id))
-
-        #         if h_team_id not in next_team_ban_IDs and a_team_id not in next_team_ban_IDs:
-        #             proceed = (await schedule_match(match_id, all_courts[i]["id"]))
-        #             next_team_ban_IDs = [h_team_id, a_team_id]
-        #             if check_no_matches_at_same_time()
-        #         else:
-        #             # unscheduled_matches.append(all_matches(match_offset))
-        
+        if len(all_unscheduled_matches) != 0:
+            raise Exception("SOME MATCHES WERE NOT SCHEDULED !!") # not good.
 
         print("This is the end of ze schedluation my friend.")
     finally:
