@@ -1,5 +1,5 @@
 from shared.db import get_async_pool
-from shared.teams import get_home_and_away_teams_from_match_id
+from shared.matches import get_home_and_away_teams_from_match_id
 
 
 async def add_slot(court_id, start_time, end_time):

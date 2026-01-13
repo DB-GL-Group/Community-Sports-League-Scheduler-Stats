@@ -2,7 +2,7 @@ from enum import Enum
 from datetime import datetime
 
 from shared.db import get_async_pool
-from shared.teams import get_all_teams_id, get_team_details
+from shared.teams import get_all_teams_id, get_team_ID_by_name, get_team_details
 from shared.rankings import update_rankings_for_division
 
 import random
@@ -516,7 +516,7 @@ async def get_match_details(match_id: int):
             LEFT JOIN persons p ON p.id = mr.referee_id
             WHERE m.id = %s
             GROUP BY m.id, m.division, m.status, m.home_team_id, m.away_team_id,
-                     m.home_score, m.away_score, m.notes, p.first_name, p.last_name
+                     m.home_score, m.away_score, m.notes, p.first_name, p.last_name, v.name
             """,
             (match_id,),
         )
@@ -538,9 +538,14 @@ async def get_match_details(match_id: int):
             "start_time": row[7],
             "current_time": row[8],
             "main_referee": row[9],
-            "notes": row[10],
-            "venue": row[11]
+            "venue": row[11],
+            "notes": row[10]
         }
+
+async def get_home_and_away_teams_from_match_id(match_id):
+    home_team_id = (await get_team_ID_by_name((await get_match_details(match_id))["home_team"]))["id"]
+    away_team_id = (await get_team_ID_by_name((await get_match_details(match_id))["away_team"]))["id"]
+    return [home_team_id, away_team_id]
 
 async def perform_tie_breaker(home_team_id, away_team_id):
     winner = int(random.randrange(1, 2))
@@ -581,28 +586,6 @@ async def get_match_winner(match_id):
     else:
         return scores["away_team_id"]
 
-    
-
-# async def get_finalists():
-#     allTeamsIDs = await get_all_teams_id()
-#     allMatchesIDs = [match["id"] for match in (await get_all_matches())]
-
-#     nbrWinsPerTeam = {}
-#     for team in allTeamsIDs:
-#         nbrWinsPerTeam.update({team["id"]: 0})
-    
-#     for match in allMatchesIDs:
-#         matchWinnerID = await get_match_winner(match["id"])
-#         if matchWinnerID in nbrWinsPerTeam:
-#             nbrWinsPerTeam[matchWinnerID] += 1
-
-#     sortedTeams = sorted(nbrWinsPerTeam.items(), key=lambda item: item[1], reverse=True)
-#     if len(sortedTeams) < 2:
-#         return [team_id for team_id, _ in sortedTeams]
-#     highestScoringTeam = sortedTeams[0][0]
-#     secondHighestScoringTeam = sortedTeams[1][0]
-
-#     return [highestScoringTeam, secondHighestScoringTeam]
 
 async def get_available_slots():
     pool = get_async_pool()

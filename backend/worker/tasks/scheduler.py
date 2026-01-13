@@ -7,10 +7,10 @@ from shared.referees import create_referee
 from shared.persons import create_person
 from shared.players import create_player
 from shared.managers import create_manager
-from shared.matches import addScore, add_match, get_all_matches, schedule_match, get_match_details
+from shared.matches import addScore, add_match, get_all_matches, schedule_match, get_match_details, get_home_and_away_teams_from_match_id
 from shared.courts import add_court, generate_slots, get_all_courts
 from shared.venues import add_venue
-from shared.teams import create_team, get_home_and_away_teams_from_match_id, add_player
+from shared.teams import create_team, add_player
 from shared.slots import get_all_slots, is_next_slot_possible
 from shared.db import close_async_pool, open_async_pool
 from worker.tasks.matchGeneretor import generate_matches
@@ -51,9 +51,9 @@ async def _run_scheduler_job() -> None:
         await add_player(player2["id"], away_team1_id, 2)
         await add_player(player3["id"], away_team2_id, 3)
 
-        match1 = await add_match(division, home_team_id, away_team1_id, ref["id"], "Active")
-        match2 = await add_match(division, home_team_id, away_team2_id, ref["id"], "Awaiting")
-        match3 = await add_match(division, away_team1_id, away_team2_id, ref["id"], "Awaiting")
+        match1 = await add_match(division, home_team_id, away_team1_id, "in_progress")
+        match2 = await add_match(division, home_team_id, away_team2_id, "scheduled")
+        match3 = await add_match(division, away_team1_id, away_team2_id, "scheduled")
 
         all_unscheduled_matches = await get_all_matches()
         # # END OF TEST //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

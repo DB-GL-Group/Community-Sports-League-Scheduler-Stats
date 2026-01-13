@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from shared.courts import add_court
 from shared.db import close_async_pool, open_async_pool
 from shared.managers import create_manager
-from shared.matches import addScore, add_match, get_all_matches, get_finalists
+from shared.matches import addScore, add_match, get_all_matches
 from shared.players import create_player
 from shared.referees import create_referee
 from shared.teams import add_player, create_team
@@ -93,13 +93,9 @@ async def _run_scheduler_job(job_id: str) -> None:
                 await addScore(match3["id"], away_team2_id, "away", player3["id"], time.time(), False)
 
 
-                # Final
-                finalists = await get_finalists()
-                finalsMatch = await add_match(
-                    division, finals_slot, finalists[0], finalists[1], ref_id, "Awaiting"
-                )
+              
 
-                await addScore(finalsMatch["id"], home_team_id, "home", player1["id"], time.time(), False)
+              
 
                 print("This is the end of ze match day my friend.")
             case _:
