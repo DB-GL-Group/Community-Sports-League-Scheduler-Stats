@@ -2,7 +2,7 @@ from shared.db import get_async_pool
 from shared.matches import MatchStatus
 
 
-async def add_venue(name, address):
+async def add_venue(name, address, courts_count: int):
     pool = get_async_pool()
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
@@ -14,10 +14,25 @@ async def add_venue(name, address):
             (name, address),
         )
         venue = await cur.fetchone()
-        await conn.commit()
         if not venue:
+            await conn.rollback()
             return {}
-        return {"id": venue[0], "name": venue[1], "address": venue[2]}
+
+        for idx in range(1, courts_count + 1):
+            await cur.execute(
+                """
+                INSERT INTO courts (venue_id, name, surface)
+                VALUES (%s, %s, %s)
+                """,
+                (venue[0], f"Court {idx}", None),
+            )
+        await conn.commit()
+        return {
+            "id": venue[0],
+            "name": venue[1],
+            "address": venue[2],
+            "courts_count": courts_count,
+        }
 
 
 async def list_venues():
@@ -25,16 +40,24 @@ async def list_venues():
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
             """
-            SELECT id, name, address
-            FROM venues
-            ORDER BY id DESC
+            SELECT v.id,
+                   v.name,
+                   v.address,
+                   COUNT(c.id) AS courts_count
+            FROM venues v
+            LEFT JOIN courts c ON c.venue_id = v.id
+            GROUP BY v.id
+            ORDER BY v.id DESC
             """
         )
         rows = await cur.fetchall()
-        return [{"id": row[0], "name": row[1], "address": row[2]} for row in rows]
+        return [
+            {"id": row[0], "name": row[1], "address": row[2], "courts_count": row[3]}
+            for row in rows
+        ]
 
 
-async def update_venue(venue_id: int, name: str, address: str | None):
+async def update_venue(venue_id: int, name: str, address: str | None, courts_count: int):
     pool = get_async_pool()
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
@@ -48,10 +71,102 @@ async def update_venue(venue_id: int, name: str, address: str | None):
             (name, address, venue_id),
         )
         row = await cur.fetchone()
-        await conn.commit()
         if not row:
+            await conn.rollback()
             return {}
-        return {"id": row[0], "name": row[1], "address": row[2]}
+
+        await cur.execute(
+            """
+            SELECT COUNT(*) FROM courts WHERE venue_id = %s
+            """,
+            (venue_id,),
+        )
+        current_count = (await cur.fetchone())[0]
+
+        if courts_count > current_count:
+            for idx in range(current_count + 1, courts_count + 1):
+                await cur.execute(
+                    """
+                    INSERT INTO courts (venue_id, name, surface)
+                    VALUES (%s, %s, %s)
+                    """,
+                    (venue_id, f"Court {idx}", None),
+                )
+        elif courts_count < current_count:
+            await cur.execute(
+                """
+                SELECT id
+                FROM courts
+                WHERE venue_id = %s
+                ORDER BY id DESC
+                LIMIT %s
+                """,
+                (venue_id, current_count - courts_count),
+            )
+            courts_to_remove = [row[0] for row in await cur.fetchall()]
+            if courts_to_remove:
+                await cur.execute(
+                    """
+                    SELECT DISTINCT m.id
+                    FROM matches m
+                    JOIN match_slot ms ON ms.match_id = m.id
+                    JOIN slots s ON s.id = ms.slot_id
+                    WHERE s.court_id = ANY(%s)
+                    """,
+                    (courts_to_remove,),
+                )
+                match_ids = [row[0] for row in await cur.fetchall()]
+
+                if match_ids:
+                    await cur.execute(
+                        """
+                        UPDATE matches
+                        SET status = %s,
+                            scheduled_start_time = COALESCE(
+                                matches.scheduled_start_time,
+                                ms_start.start_time
+                            )
+                        FROM (
+                            SELECT ms.match_id, MIN(s.start_time) AS start_time
+                            FROM match_slot ms
+                            JOIN slots s ON s.id = ms.slot_id
+                            WHERE ms.match_id = ANY(%s)
+                            GROUP BY ms.match_id
+                        ) AS ms_start
+                        WHERE matches.id = ms_start.match_id
+                        """,
+                        (MatchStatus.CANCELED.value, match_ids),
+                    )
+                    await cur.execute(
+                        """
+                        DELETE FROM match_slot
+                        WHERE match_id = ANY(%s)
+                        """,
+                        (match_ids,),
+                    )
+
+                await cur.execute(
+                    """
+                    DELETE FROM slots
+                    WHERE court_id = ANY(%s)
+                    """,
+                    (courts_to_remove,),
+                )
+                await cur.execute(
+                    """
+                    DELETE FROM courts
+                    WHERE id = ANY(%s)
+                    """,
+                    (courts_to_remove,),
+                )
+
+        await conn.commit()
+        return {
+            "id": row[0],
+            "name": row[1],
+            "address": row[2],
+            "courts_count": courts_count,
+        }
 
 
 async def delete_venue(venue_id: int):

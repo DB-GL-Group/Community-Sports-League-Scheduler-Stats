@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from helper.redis import _get_queue
 from shared.persons import create_person
 from shared.db import get_async_pool
@@ -75,6 +77,21 @@ async def remove_referee_availability(referee_id: int, slot_id: int):
     async with pool.connection() as conn, conn.cursor() as cur:
         await cur.execute(
             """
+            SELECT start_time
+            FROM slots
+            WHERE id = %s
+            """,
+            (slot_id,),
+        )
+        slot_row = await cur.fetchone()
+        if not slot_row:
+            return {}
+        start_time = slot_row[0]
+        if start_time <= datetime.now(timezone.utc) + timedelta(hours=24):
+            return {"locked": True, "start_time": start_time}
+
+        await cur.execute(
+            """
             DELETE FROM ref_dispos
             WHERE referee_id = %s AND slot_id = %s
             RETURNING referee_id, slot_id
@@ -85,6 +102,8 @@ async def remove_referee_availability(referee_id: int, slot_id: int):
         await conn.commit()
         if not row:
             return {}
+        queue = _get_queue()
+        queue.enqueue(run_assign_referees_for_slots, [slot_id])
         return {"id": row[0], "slot_id": row[1]}
 
 
@@ -98,9 +117,8 @@ async def replace_referee_availability(referee_id: int, slot_ids: list[int]):
                 [(referee_id, slot_id) for slot_id in slot_ids],
             )
         await conn.commit()
-        if slot_ids:
-            queue = _get_queue()
-            queue.enqueue(run_assign_referees_for_slots, slot_ids)
+        queue = _get_queue()
+        queue.enqueue(run_assign_referees_for_slots, None)
         return {"id": referee_id, "count": len(slot_ids)}
 
 

@@ -21,6 +21,7 @@ class _AdminVenuesPageState extends State<AdminVenuesPage> {
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
   int? _editingVenueId;
+  int _courtsCount = 1;
 
   @override
   void didChangeDependencies() {
@@ -80,6 +81,7 @@ class _AdminVenuesPageState extends State<AdminVenuesPage> {
             'address': _addressController.text.trim().isEmpty
                 ? null
                 : _addressController.text.trim(),
+            'courts_count': _courtsCount,
           },
         );
       } else {
@@ -92,11 +94,13 @@ class _AdminVenuesPageState extends State<AdminVenuesPage> {
             'address': _addressController.text.trim().isEmpty
                 ? null
                 : _addressController.text.trim(),
+            'courts_count': _courtsCount,
           },
         );
       }
       _nameController.clear();
       _addressController.clear();
+      _courtsCount = 1;
       _editingVenueId = null;
       await _refresh();
       setState(() {
@@ -221,6 +225,7 @@ class _AdminVenuesPageState extends State<AdminVenuesPage> {
       _editingVenueId = venue['id'] as int?;
       _nameController.text = venue['name']?.toString() ?? '';
       _addressController.text = venue['address']?.toString() ?? '';
+      _courtsCount = (venue['courts_count'] as int?) ?? 1;
       _message = 'Editing venue...';
     });
   }
@@ -287,6 +292,26 @@ class _AdminVenuesPageState extends State<AdminVenuesPage> {
                             controller: _addressController,
                             decoration: const InputDecoration(labelText: 'Address (optional)'),
                           ),
+                          const SizedBox(height: 8),
+                          DropdownButtonFormField<int>(
+                            value: _courtsCount,
+                            decoration: const InputDecoration(labelText: 'Courts'),
+                            items: List.generate(12, (index) {
+                              final value = index + 1;
+                              return DropdownMenuItem(
+                                value: value,
+                                child: Text('$value'),
+                              );
+                            }),
+                            onChanged: _isSubmitting
+                                ? null
+                                : (value) {
+                                    if (value == null) return;
+                                    setState(() {
+                                      _courtsCount = value;
+                                    });
+                                  },
+                          ),
                           const SizedBox(height: 12),
                           ElevatedButton(
                             onPressed: _isSubmitting ? null : _addVenue,
@@ -302,6 +327,7 @@ class _AdminVenuesPageState extends State<AdminVenuesPage> {
                                         _editingVenueId = null;
                                         _nameController.clear();
                                         _addressController.clear();
+                                        _courtsCount = 1;
                                         _message = '';
                                       });
                                     },
@@ -328,6 +354,7 @@ class _AdminVenuesPageState extends State<AdminVenuesPage> {
                     const Center(child: Text('No venues yet')),
                   ...venues.map((venue) {
                     final address = (venue['address'] ?? '').toString();
+                    final courtsCount = venue['courts_count'] ?? 0;
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(16),
@@ -378,6 +405,13 @@ class _AdminVenuesPageState extends State<AdminVenuesPage> {
                               ),
                             ),
                           ],
+                          const SizedBox(height: 6),
+                          Text(
+                            'Courts: $courtsCount',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                          ),
                         ],
                       ),
                     );

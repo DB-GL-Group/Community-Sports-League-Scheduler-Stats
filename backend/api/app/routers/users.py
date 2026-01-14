@@ -271,6 +271,11 @@ async def remove_referee_availability_slot(
     if not current_user.get("person_id"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Referee profile missing")
     row = await remove_referee_availability(current_user["person_id"], slot_id)
+    if row.get("locked"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Availability cannot be removed within 24 hours of the match",
+        )
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Availability not found")
     return {"status": "deleted"}
@@ -547,7 +552,7 @@ async def admin_add_venue(
     payload: VenueCreateRequest,
     current_user: UserResponse = Depends(require_role("ADMIN")),
 ):
-    venue = await add_venue(payload.name, payload.address)
+    venue = await add_venue(payload.name, payload.address, payload.courts_count)
     if not venue:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Venue creation failed")
     return venue
@@ -559,7 +564,7 @@ async def admin_update_venue(
     payload: VenueCreateRequest,
     current_user: UserResponse = Depends(require_role("ADMIN")),
 ):
-    venue = await update_venue(venue_id, payload.name, payload.address)
+    venue = await update_venue(venue_id, payload.name, payload.address, payload.courts_count)
     if not venue:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Venue not found")
     return venue
