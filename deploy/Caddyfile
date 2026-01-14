@@ -1,0 +1,11 @@
+:80 {
+  handle /api* {
+    uri strip_prefix /api
+    reverse_proxy backend:8000
+  }
+  handle {
+    root * /srv/web
+    try_files {path} /index.html
+    file_server
+  }
+}

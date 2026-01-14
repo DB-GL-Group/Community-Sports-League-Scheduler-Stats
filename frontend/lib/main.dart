@@ -16,8 +16,11 @@ import 'package:community_sports_league_scheduler/pages/admin_console_page.dart'
 import 'package:community_sports_league_scheduler/pages/admin_scheduler_page.dart';
 import 'package:community_sports_league_scheduler/pages/admin_venues_page.dart';
 import 'package:community_sports_league_scheduler/theme_provider.dart';
+import 'package:community_sports_league_scheduler/network_provider.dart';
+import 'package:community_sports_league_scheduler/pages/network_page.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
@@ -64,6 +67,9 @@ void main() => runApp(
       ChangeNotifierProvider(
         create: (_) => ThemeProvider(),
       ),
+      ChangeNotifierProvider(
+        create: (_) => NetworkProvider(),
+      ),
     ],
     child: Consumer<ThemeProvider>(
       builder: (context, themeProvider, _) => SportsLeagueScheduler(
@@ -86,15 +92,30 @@ class SportsLeagueScheduler extends StatefulWidget {
 class _SportsLeagueSchedulerState extends State<SportsLeagueScheduler> {
   late final GoRouter _router;
   late final AuthProvider _auth;
+  late final NetworkProvider _network;
+  late final ApiRouter _apiRouter;
 
   @override
   void initState() {
     super.initState();
     _auth = context.read<AuthProvider>();
+    _network = context.read<NetworkProvider>();
+    _apiRouter = context.read<ApiRouter>();
+    if (kIsWeb) {
+      final webBaseUrl = '${Uri.base.origin}/api';
+      _apiRouter.setBaseUrl(webBaseUrl);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _network.setConnectedBaseUrl(_apiRouter.getBaseUrl());
+      });
+    }
     _router = GoRouter(
       navigatorKey: navigatorKey,
-      refreshListenable: _auth,
+      refreshListenable: Listenable.merge([_auth, _network]),
       routes: [
+        GoRoute(
+          path: '/network',
+          builder: (_, __) => const NetworkPage(),
+        ),
         GoRoute(
           path: '/',
           builder: (_, __) => const MatchesPage(),
@@ -166,6 +187,19 @@ class _SportsLeagueSchedulerState extends State<SportsLeagueScheduler> {
           redirect: (_, __) => !_auth.hasRole('ADMIN') ? '/' : null,
         ),
       ],
+      redirect: (context, state) {
+        if (kIsWeb) {
+          return state.matchedLocation == '/network' ? '/' : null;
+        }
+        final onNetwork = state.matchedLocation == '/network';
+        if (!_network.isConnected && !onNetwork) {
+          return '/network';
+        }
+        if (_network.isConnected && onNetwork) {
+          return '/';
+        }
+        return null;
+      },
     );
   }
 

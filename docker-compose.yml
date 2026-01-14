@@ -50,6 +50,7 @@ services:
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
       REDIS_URL: "redis://redis:6379/0"
+      HOST_IP: "${HOST_IP:-}"
     volumes:
       - ./backend:/app
     ports:
@@ -73,6 +74,18 @@ services:
     volumes:
       - ./backend:/app
     command: rq worker --url redis://redis:6379/0 scheduler
+
+  proxy:
+    image: caddy:2
+    container_name: sports-league-proxy
+    restart: unless-stopped
+    depends_on:
+      - backend
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./frontend/build/web:/srv/web:ro
+    ports:
+      - "80:80"
 
 
 volumes:

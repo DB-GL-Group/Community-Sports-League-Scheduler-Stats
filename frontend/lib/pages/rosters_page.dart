@@ -123,71 +123,74 @@ class _RostersPageState extends State<RostersPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              scrollable: true,
               title: const Text('Create Team'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Team Name'),
-                  ),
-                  TextField(
-                    controller: divisionController,
-                    decoration: const InputDecoration(labelText: 'Division'),
-                    keyboardType: TextInputType.number,
-                  ),
-                  TextField(
-                    controller: shortNameController,
-                    decoration: const InputDecoration(labelText: 'Short Name'),
-                  ),
-                  DropdownButtonFormField<String>(
-                    value: primaryColorValue,
-                    items: [
-                      const DropdownMenuItem<String>(
-                        value: '',
-                        child: Text('None'),
-                      ),
-                      for (final color in _colorOptions)
-                        DropdownMenuItem<String>(
-                          value: color['value'],
-                          child: Text('${color['name']} (${color['value']})'),
-                        ),
-                    ],
-                    onChanged: (value) {
-                      setDialogState(() {
-                        primaryColorValue = value ?? '';
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Primary Color',
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'Team Name'),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: secondaryColorValue,
-                    items: [
-                      const DropdownMenuItem<String>(
-                        value: '',
-                        child: Text('None'),
-                      ),
-                      for (final color in _colorOptions)
-                        DropdownMenuItem<String>(
-                          value: color['value'],
-                          child: Text('${color['name']} (${color['value']})'),
-                        ),
-                    ],
-                    onChanged: (value) {
-                      setDialogState(() {
-                        secondaryColorValue = value ?? '';
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Secondary Color',
+                    TextField(
+                      controller: divisionController,
+                      decoration: const InputDecoration(labelText: 'Division'),
+                      keyboardType: TextInputType.number,
                     ),
-                  ),
-                ],
+                    TextField(
+                      controller: shortNameController,
+                      decoration: const InputDecoration(labelText: 'Short Name'),
+                    ),
+                    DropdownButtonFormField<String>(
+                      value: primaryColorValue,
+                      items: [
+                        const DropdownMenuItem<String>(
+                          value: '',
+                          child: Text('None'),
+                        ),
+                        for (final color in _colorOptions)
+                          DropdownMenuItem<String>(
+                            value: color['value'],
+                            child: Text('${color['name']} (${color['value']})'),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        setDialogState(() {
+                          primaryColorValue = value ?? '';
+                        });
+                      },
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Primary Color',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: secondaryColorValue,
+                      items: [
+                        const DropdownMenuItem<String>(
+                          value: '',
+                          child: Text('None'),
+                        ),
+                        for (final color in _colorOptions)
+                          DropdownMenuItem<String>(
+                            value: color['value'],
+                            child: Text('${color['name']} (${color['value']})'),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        setDialogState(() {
+                          secondaryColorValue = value ?? '';
+                        });
+                      },
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Secondary Color',
+                      ),
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -280,107 +283,110 @@ class _RostersPageState extends State<RostersPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              scrollable: true,
               title: const Text('Edit Team'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Team Name'),
-                  ),
-                  TextField(
-                    controller: divisionController,
-                    decoration: const InputDecoration(labelText: 'Division'),
-                    keyboardType: TextInputType.number,
-                  ),
-                  TextField(
-                    controller: shortNameController,
-                    decoration: const InputDecoration(labelText: 'Short Name'),
-                  ),
-                  DropdownButtonFormField<String>(
-                    value: primaryColorValue,
-                    items: [
-                      const DropdownMenuItem<String>(
-                        value: '',
-                        child: Text('None'),
-                      ),
-                      if (primaryColorValue.isNotEmpty && !colorValues.contains(primaryColorValue))
-                        DropdownMenuItem<String>(
-                          value: primaryColorValue,
-                          child: const Text('Current color'),
-                        ),
-                      for (final color in _colorOptions)
-                        DropdownMenuItem<String>(
-                          value: color['value'],
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 12,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: _hexToColor(color['value']!),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text('${color['name']}'),
-                            ],
-                          ),
-                        ),
-                    ],
-                    onChanged: (value) {
-                      setDialogState(() {
-                        primaryColorValue = value ?? '';
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Primary Color',
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'Team Name'),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: secondaryColorValue,
-                    items: [
-                      const DropdownMenuItem<String>(
-                        value: '',
-                        child: Text('None'),
-                      ),
-                      if (secondaryColorValue.isNotEmpty && !colorValues.contains(secondaryColorValue))
-                        DropdownMenuItem<String>(
-                          value: secondaryColorValue,
-                          child: const Text('Current color'),
-                        ),
-                      for (final color in _colorOptions)
-                        DropdownMenuItem<String>(
-                          value: color['value'],
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 12,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: _hexToColor(color['value']!),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text('${color['name']}'),
-                            ],
-                          ),
-                        ),
-                    ],
-                    onChanged: (value) {
-                      setDialogState(() {
-                        secondaryColorValue = value ?? '';
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Secondary Color',
+                    TextField(
+                      controller: divisionController,
+                      decoration: const InputDecoration(labelText: 'Division'),
+                      keyboardType: TextInputType.number,
                     ),
-                  ),
-                ],
+                    TextField(
+                      controller: shortNameController,
+                      decoration: const InputDecoration(labelText: 'Short Name'),
+                    ),
+                    DropdownButtonFormField<String>(
+                      value: primaryColorValue,
+                      items: [
+                        const DropdownMenuItem<String>(
+                          value: '',
+                          child: Text('None'),
+                        ),
+                        if (primaryColorValue.isNotEmpty && !colorValues.contains(primaryColorValue))
+                          DropdownMenuItem<String>(
+                            value: primaryColorValue,
+                            child: const Text('Current color'),
+                          ),
+                        for (final color in _colorOptions)
+                          DropdownMenuItem<String>(
+                            value: color['value'],
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: _hexToColor(color['value']!),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text('${color['name']}'),
+                              ],
+                            ),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        setDialogState(() {
+                          primaryColorValue = value ?? '';
+                        });
+                      },
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Primary Color',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: secondaryColorValue,
+                      items: [
+                        const DropdownMenuItem<String>(
+                          value: '',
+                          child: Text('None'),
+                        ),
+                        if (secondaryColorValue.isNotEmpty && !colorValues.contains(secondaryColorValue))
+                          DropdownMenuItem<String>(
+                            value: secondaryColorValue,
+                            child: const Text('Current color'),
+                          ),
+                        for (final color in _colorOptions)
+                          DropdownMenuItem<String>(
+                            value: color['value'],
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: _hexToColor(color['value']!),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text('${color['name']}'),
+                              ],
+                            ),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        setDialogState(() {
+                          secondaryColorValue = value ?? '';
+                        });
+                      },
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Secondary Color',
+                      ),
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -483,85 +489,88 @@ class _RostersPageState extends State<RostersPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              scrollable: true,
               title: const Text('Add Player'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  RadioListTile<bool>(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Select existing player'),
-                    value: true,
-                    groupValue: useExisting,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        useExisting = value ?? true;
-                      });
-                    },
-                  ),
-                  if (useExisting)
-                    FutureBuilder<List<om.Player>>(
-                      future: freePlayersFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
-                        if (snapshot.hasError) {
-                          return const Center(child: Text('Error loading players'));
-                        }
-                        final players = snapshot.data ?? [];
-                        if (players.isEmpty) {
-                          return const Text('No available players');
-                        }
-                        selectedPlayerId ??= players.first.id;
-                        return DropdownButton<int>(
-                          value: selectedPlayerId,
-                          items: [
-                            for (var p in players)
-                              DropdownMenuItem<int>(
-                                value: p.id,
-                                child: Text('${p.firstName} ${p.lastName}'),
-                              )
-                          ],
-                          onChanged: (newValue) {
-                            if (newValue == null) return;
-                            setDialogState(() {
-                              selectedPlayerId = newValue;
-                            });
-                          },
-                        );
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RadioListTile<bool>(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Select existing player'),
+                      value: true,
+                      groupValue: useExisting,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          useExisting = value ?? true;
+                        });
                       },
                     ),
-                  const SizedBox(height: 10),
-                  RadioListTile<bool>(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Create new player'),
-                    value: false,
-                    groupValue: useExisting,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        useExisting = value ?? false;
-                      });
-                    },
-                  ),
-                  if (!useExisting)
-                    Column(
-                      children: [
-                        TextField(
-                          controller: firstNameController,
-                          decoration: const InputDecoration(labelText: 'First Name'),
-                        ),
-                        TextField(
-                          controller: lastNameController,
-                          decoration: const InputDecoration(labelText: 'Last Name'),
-                        ),
-                      ],
+                    if (useExisting)
+                      FutureBuilder<List<om.Player>>(
+                        future: freePlayersFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          if (snapshot.hasError) {
+                            return const Center(child: Text('Error loading players'));
+                          }
+                          final players = snapshot.data ?? [];
+                          if (players.isEmpty) {
+                            return const Text('No available players');
+                          }
+                          selectedPlayerId ??= players.first.id;
+                          return DropdownButton<int>(
+                            value: selectedPlayerId,
+                            items: [
+                              for (var p in players)
+                                DropdownMenuItem<int>(
+                                  value: p.id,
+                                  child: Text('${p.firstName} ${p.lastName}'),
+                                )
+                            ],
+                            onChanged: (newValue) {
+                              if (newValue == null) return;
+                              setDialogState(() {
+                                selectedPlayerId = newValue;
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    const SizedBox(height: 10),
+                    RadioListTile<bool>(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Create new player'),
+                      value: false,
+                      groupValue: useExisting,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          useExisting = value ?? false;
+                        });
+                      },
                     ),
-                  TextField(
-                    controller: numberController,
-                    decoration: const InputDecoration(labelText: 'Shirt Number'),
-                    keyboardType: TextInputType.number,
-                  ),
-                ],
+                    if (!useExisting)
+                      Column(
+                        children: [
+                          TextField(
+                            controller: firstNameController,
+                            decoration: const InputDecoration(labelText: 'First Name'),
+                          ),
+                          TextField(
+                            controller: lastNameController,
+                            decoration: const InputDecoration(labelText: 'Last Name'),
+                          ),
+                        ],
+                      ),
+                    TextField(
+                      controller: numberController,
+                      decoration: const InputDecoration(labelText: 'Shirt Number'),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(

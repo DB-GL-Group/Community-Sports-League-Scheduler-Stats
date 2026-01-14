@@ -1,15 +1,27 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert'; // Pour jsonDecode
 
+
 typedef SessionExpiredCallback = Future<void> Function();
 
 
 class ApiRouter {
-  ApiRouter({this.baseUrl = "http://localhost:8000", this.onSessionExpired});
+  ApiRouter({String? baseUrl, this.onSessionExpired})
+      : baseUrl = baseUrl ?? "";
 
-  final String baseUrl;
+  String baseUrl;
   final SessionExpiredCallback? onSessionExpired;
   static bool _sessionDialogOpen = false;
+
+  String getBaseUrl() => baseUrl;
+
+  void setBaseUrl(String url) {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return;
+    baseUrl = trimmed.endsWith('/')
+        ? trimmed.substring(0, trimmed.length - 1)
+        : trimmed;
+  }
 
   Future<dynamic> fetchData(String endpoint, {String method = 'GET', Map<String, dynamic> body = const {}, String token = ''}) async {
     final headers = <String, String>{

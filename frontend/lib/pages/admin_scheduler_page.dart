@@ -559,45 +559,7 @@ class _AdminSchedulerPageState extends State<AdminSchedulerPage> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Theme.of(context).dividerColor),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(_formatStatus(statusSnapshot.data)),
-                                const SizedBox(height: 6),
-                                FutureBuilder<Map<String, dynamic>?>(
-                                  future: _genStatusFuture,
-                                  builder: (context, genSnapshot) {
-                                    return Text(_formatGenStatus(genSnapshot.data));
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          OutlinedButton(
-                            onPressed: _isAnyJobBlocking() ? null : _generateMatches,
-                            child: const Text('Generate Matches'),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: _isAnyJobBlocking() ? null : _runScheduler,
-                            child: const Text('Run Scheduler'),
-                          ),
-                        ],
-                      ),
-                    ),
+                    child: _buildSchedulerHeader(statusSnapshot.data),
                   ),
                   if (_message.isNotEmpty)
                     Padding(
@@ -638,6 +600,73 @@ class _AdminSchedulerPageState extends State<AdminSchedulerPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSchedulerHeader(Map<String, dynamic>? status) {
+    final isBlocked = _isAnyJobBlocking();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 520;
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Theme.of(context).dividerColor),
+          ),
+          child: isNarrow
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildStatusBlock(status),
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: isBlocked ? null : _generateMatches,
+                      child: const Text('Generate Matches'),
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: isBlocked ? null : _runScheduler,
+                      child: const Text('Run Scheduler'),
+                    ),
+                  ],
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildStatusBlock(status)),
+                    const SizedBox(width: 12),
+                    OutlinedButton(
+                      onPressed: isBlocked ? null : _generateMatches,
+                      child: const Text('Generate Matches'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: isBlocked ? null : _runScheduler,
+                      child: const Text('Run Scheduler'),
+                    ),
+                  ],
+                ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatusBlock(Map<String, dynamic>? status) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(_formatStatus(status)),
+        const SizedBox(height: 6),
+        FutureBuilder<Map<String, dynamic>?>(
+          future: _genStatusFuture,
+          builder: (context, genSnapshot) {
+            return Text(_formatGenStatus(genSnapshot.data));
+          },
+        ),
+      ],
     );
   }
 }

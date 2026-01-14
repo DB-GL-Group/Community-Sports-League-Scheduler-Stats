@@ -123,6 +123,7 @@ class _LogInFormState extends State<LogInForm> {
               if (_logInFormKey.currentState!.validate()) {
                 _logInFormKey.currentState!.save();
                 try {
+                  print('Login request sent');
                   final data = await context.read<ApiRouter>().fetchData('auth/login', method: 'POST', body: {
                     "email":email!,
                     "password":password!

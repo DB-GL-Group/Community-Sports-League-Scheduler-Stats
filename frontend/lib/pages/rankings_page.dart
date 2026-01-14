@@ -145,38 +145,50 @@ class _RankingsPageState extends State<RankingsPage> {
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
-                child: DataTable(
-                  columns: const [
-                    DataColumn(label: Text('Rank', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Team', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Points', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('GD', style: TextStyle(fontWeight: FontWeight.bold))),
-                  ],
-                  rows: ranking.map((entry) {
-                    final primaryColor = _colorFromValue(entry.team_primary_color);
-                    final secondaryColor = _colorFromValue(entry.team_secondary_color);
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: DataTable(
+                    columnSpacing: 16,
+                    columns: const [
+                      DataColumn(label: Text('Rank', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Team', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Points', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('GD', style: TextStyle(fontWeight: FontWeight.bold))),
+                    ],
+                    rows: ranking.map((entry) {
+                      final primaryColor = _colorFromValue(entry.team_primary_color);
+                      final secondaryColor = _colorFromValue(entry.team_secondary_color);
 
-                    return DataRow(
-                      cells: [
-                        DataCell(Text('${entry.rank}')),
-                        DataCell(
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 12,
-                                backgroundColor: primaryColor,
-                                child: CircleAvatar(radius: 6, backgroundColor: secondaryColor),
+                      return DataRow(
+                        cells: [
+                          DataCell(Text('${entry.rank}')),
+                          DataCell(
+                            SizedBox(
+                              width: 200,
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 12,
+                                    backgroundColor: primaryColor,
+                                    child: CircleAvatar(radius: 6, backgroundColor: secondaryColor),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      entry.team_name,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              Text(entry.team_name),
-                            ],
+                            ),
                           ),
-                        ),
-                        DataCell(Text('${entry.points}')),
-                        DataCell(Text('${entry.goal_difference}')),
-                      ],
-                    );
-                  }).toList(),
+                          DataCell(Text('${entry.points}')),
+                          DataCell(Text('${entry.goal_difference}')),
+                        ],
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
             );

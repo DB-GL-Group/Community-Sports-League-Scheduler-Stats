@@ -264,6 +264,30 @@ function Enable-Web {
     if (Prompt-YesNo "Enable Flutter web support?") { flutter config --enable-web }
 }
 
+function Enable-Android {
+    if (Prompt-YesNo "Enable Flutter Android support?") { flutter config --enable-android }
+}
+
+function Ensure-Frontend-Platforms {
+    $repoRoot = Split-Path -Parent $PSScriptRoot
+    $frontend = Join-Path $repoRoot "frontend"
+    if (-not (Test-Path $frontend)) { return }
+
+    $needsAndroid = -not (Test-Path (Join-Path $frontend "android"))
+    $needsWeb = -not (Test-Path (Join-Path $frontend "web"))
+    if (-not ($needsAndroid -or $needsWeb)) { return }
+
+    $platforms = @()
+    if ($needsAndroid) { $platforms += "android" }
+    if ($needsWeb) { $platforms += "web" }
+    $platformArg = $platforms -join ","
+
+    Write-Host "Generating missing Flutter platforms in $frontend ($platformArg)..."
+    Push-Location $frontend
+    flutter create --platforms $platformArg .
+    Pop-Location
+}
+
 function Enable-Desktop {
     $platform = Detect-Platform
     if ($platform -eq "windows") {
@@ -279,8 +303,10 @@ Install-Flutter
 flutter --version
 Setup-Android
 Setup-AVD
+Enable-Android
 Enable-Web
 Enable-Desktop
 Write-Host "`nRunning flutter doctor..."
 flutter doctor -v
+Ensure-Frontend-Platforms
 Write-EnvScript

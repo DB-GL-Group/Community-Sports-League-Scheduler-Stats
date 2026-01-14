@@ -1,4 +1,6 @@
 import logging
+import os
+import socket
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -12,13 +14,28 @@ from .routers.matches import router as matches_router
 from .routers.users import router as users_router
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn.error")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await open_async_pool()
     try:
+        host = socket.gethostname()
+        ips = {
+            addr[4][0]
+            for addr in socket.getaddrinfo(host, None, family=socket.AF_INET)
+            if addr[4][0] and not addr[4][0].startswith("127.")
+        }
+        if not ips:
+            ips = {"127.0.0.1"}
+        for ip in sorted(ips):
+            logger.info("Backend running at http://%s:8000", ip)
+        host_ip = os.getenv("HOST_IP")
+        if host_ip:
+            logger.info("Host IP: http://%s:8000", host_ip)
+        else:
+            logger.info("Host IP not set (HOST_IP env missing)")
         yield
     finally:
         await close_async_pool()

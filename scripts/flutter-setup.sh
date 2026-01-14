@@ -142,10 +142,51 @@ enable_web() {
   fi
 }
 
+enable_android() {
+  if prompt_yes_no "Enable Flutter Android support?"; then
+    flutter config --enable-android
+  fi
+}
+
 enable_desktop() {
   if prompt_yes_no "Enable macOS desktop (requires Xcode tools)?"; then
     flutter config --enable-macos-desktop
   fi
+}
+
+
+ensure_frontend_platforms() {
+  local repo_root
+  repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  local frontend="$repo_root/frontend"
+  if [ ! -d "$frontend" ]; then
+    return 0
+  fi
+
+  local needs_android=0
+  local needs_web=0
+  if [ ! -d "$frontend/android" ]; then
+    needs_android=1
+  fi
+  if [ ! -d "$frontend/web" ]; then
+    needs_web=1
+  fi
+  if [ $needs_android -eq 0 ] && [ $needs_web -eq 0 ]; then
+    return 0
+  fi
+
+  local platforms=()
+  if [ $needs_android -eq 1 ]; then
+    platforms+=("android")
+  fi
+  if [ $needs_web -eq 1 ]; then
+    platforms+=("web")
+  fi
+  local platform_arg
+  platform_arg="$(IFS=,; echo "${platforms[*]}")"
+
+  echo "Generating missing Flutter platforms in $frontend ($platform_arg)..."
+  (cd "$frontend" && flutter create --platforms "$platform_arg" .)
 }
 
 if [ "$(uname -s)" != "Darwin" ]; then
@@ -157,10 +198,12 @@ install_flutter
 flutter --version
 setup_android
 setup_avd
+enable_android
 enable_web
 enable_desktop
 echo
 echo "Running flutter doctor..."
 flutter doctor -v
+ensure_frontend_platforms
 echo
 echo "Restart your shell if PATH changes do not take effect."

@@ -9,6 +9,8 @@
 * [🗄️ Database](#database)
 * [🧠 Backend](#backend)
 * [🎨 Frontend](#frontend)
+* [🌱 Data Seeding (from backend docker terminal)](#data_seed)
+* [🚀​ Release](#release)
 * [📖 Documentation](#documentation)
 
 ---
@@ -219,7 +221,9 @@ flutter run -d chrome
 
 ---
 
-## Data Seeding (from backend docker terminal)
+<a id="data_seed"></a>
+
+## 🌱 Data Seeding (from backend docker terminal)
 
 ### Teams 
 
@@ -235,6 +239,54 @@ python -m helper.debug_matches --division <division> --count <nb_of_matches> --s
 > 📌 status : in_progress, scheduled, canceled, postponed, finished, tbd
 
 ---
+
+<a id="release"></a>
+
+## 🚀 Release
+
+### 🛠️ Prepare the host (backend + proxy)
+
+* Build the web app: `make frontend-build-web`
+* Start backend + proxy: `make backend-start`
+* Open port 80: `make open-port-80` (run as admin)
+* Verify: `http://<HOST_IP>/api/health` must return `{status: "ok"}`
+
+### 📦 Build web
+```bash
+cd frontend
+flutter build web
+```
+
+### 🌐 Web access
+
+* Open `http://<HOST_IP>/` in the browser
+* The API is accessed through the proxy via `/api` (same origin)
+
+### 📦 Android build
+
+```bash
+cd frontend
+flutter build apk --release
+```
+
+* Generated APK: `app-release.apk`
+
+### 🤖 Android access
+
+* Enter the host URL in the network portal: `http://<HOST_IP>`
+  (`/api` is added automatically)
+* If needed, verify `http://<HOST_IP>/api/health` from the phone’s browser
+
+### 📡 Network notes
+
+* Clients must be on the same network as the host
+* The backend is exposed through the proxy on port 80
+  (single URL for both web and mobile app)
+* To close port 80: `make close-port-80` (run as admin)
+
+
+---
+
 
 <a id="documentation"></a>
 

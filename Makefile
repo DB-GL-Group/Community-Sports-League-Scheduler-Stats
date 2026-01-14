@@ -1,4 +1,10 @@
-.PHONY: db-start db-stop db-reset db-migrate db-status db-remove-all flutter-setup
+.PHONY: db-start db-stop db-reset db-migrate db-status db-remove-all flutter-setup backend-start backend-stop backend-restart backend-reset open-port-80 close-port-80 frontend-build-web
+
+ifeq ($(OS),Windows_NT)
+BACKEND_START_CMD = powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backend-start.ps1
+else
+BACKEND_START_CMD = bash scripts/backend-start.sh
+endif
 
 # Database management
 db-start:
@@ -7,21 +13,21 @@ db-start:
 db-stop:
 	docker compose down db flyway
 
-db-remove-all:
-	docker compose down -v --rmi all --remove-orphans
+db-remove:
+	docker compose down -v db flyway
 
 db-migrate:
 	docker compose run --rm flyway
 
 db-restart:
-	db-stop
-	db-start
-	db-migrate
+	$(MAKE) db-stop
+	$(MAKE) db-start
+	$(MAKE) db-migrate
 
 db-reset:
-	docker compose down -v db flyway
-	docker compose up -d db
-	docker compose run --rm flyway
+	$(MAKE) db-remove
+	$(MAKE) db-start
+	$(MAKE) db-migrate
 
 db-status:
 	@powershell -NoLogo -NoProfile -Command \
@@ -31,21 +37,40 @@ db-status:
 
 # Backend management
 backend-start:
-	docker compose up -d --build backend worker
+	$(BACKEND_START_CMD)
+	docker compose up -d proxy
 
 backend-stop:
-	docker compose down backend redis worker
+	docker compose down backend redis worker proxy
 
-backend-restart: 
-	backend-stop 
-	backend-start
+backend-remove:
+	docker compose down backend redis worker proxy --remove-orphans --rmi local
+
+
+backend-restart:
+	$(MAKE) backend-stop
+	$(MAKE) backend-start
 
 backend-reset:
-	docker compose down -v backend redis worker
-	docker compose up -d --build backend worker
+	$(MAKE) backend-remove
+	$(MAKE) backend-start
 
 backend-db-conn:
 	curl http://localhost:8000/health
+
+open-port-80:
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -ExecutionPolicy Bypass -File scripts/open-port-80.ps1
+else
+	bash scripts/open-port-80.sh
+endif
+
+close-port-80:
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -ExecutionPolicy Bypass -File scripts/close-port-80.ps1
+else
+	bash scripts/close-port-80.sh
+endif
 
 # Flutter setup
 flutter-setup:
@@ -59,6 +84,9 @@ flutter-setup:
 			powershell -NoProfile -ExecutionPolicy Bypass -File scripts/flutter-setup.ps1; \
 		fi; \
 	fi
+
+frontend-build-web:
+	cd frontend && flutter build web
 
 # Some test requests
 test-signup:
