@@ -51,9 +51,9 @@ async def _run_scheduler_job() -> None:
 
         # Venue setup
         # It will be in the DB and just make a function that gets those venues.
-        venue_id = (await add_venue("Rocks The Lakes", "Rue de Saint-Pierre 12"))["id"]
-        court1_id = (await add_court(venue_id, "Court1", "Normal"))["id"]
-        court2_id = (await add_court(venue_id, "Court2", "Normal"))["id"]
+        # venue_id = (await add_venue("Rocks The Lakes", "Rue de Saint-Pierre 12"))["id"]
+        # court1_id = (await add_court(venue_id, "Court1", "Normal"))["id"]
+        # court2_id = (await add_court(venue_id, "Court2", "Normal"))["id"]
         
         # Genereate season length based of all matches received (6 slots a day per venue)
         all_courts = await get_all_courts()

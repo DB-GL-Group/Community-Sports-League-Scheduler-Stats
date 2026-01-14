@@ -246,9 +246,9 @@ python -m helper.debug_matches --division <division> --count <nb_of_matches> --s
 
 ### 🛠️ Prepare the host (backend + proxy)
 
-* Build the web app: `make frontend-build-web`
-* Start backend + proxy: `make backend-start`
+* Build the web app: `make frontend-build-web` or [Build web](#-build-web)
 * Open port 80: `make open-port-80` (run as admin)
+* Start backend + proxy: `make backend-start`
 * Verify: `http://<HOST_IP>/api/health` must return `{status: "ok"}`
 
 ### 📦 Build web
